@@ -1,13 +1,14 @@
-import { UserButton } from "@clerk/nextjs";
-import { currentUser } from "@clerk/nextjs/server";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 
 export default async function Dashboard() {
-  const user = await currentUser();
+  const session = await getServerSession(authOptions);
+  const user = session?.user;
 
   if (!user) {
-    redirect("/sign-in");
+    redirect("/api/auth/signin");
   }
 
   return (
@@ -26,13 +27,13 @@ export default async function Dashboard() {
         <nav style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
           <Link href="/dashboard" style={{ fontWeight: 500, color: 'var(--primary)' }}>Dashboard</Link>
           <Link href="/dashboard/courses" style={{ fontWeight: 500, opacity: 0.8 }}>Courses</Link>
-          <UserButton />
+          <Link href="/api/auth/signout" style={{ fontWeight: 500, color: 'red' }}>Sign Out</Link>
         </nav>
       </header>
       
       <main className="container" style={{ flex: 1, padding: '3rem 1rem' }}>
         <h1 style={{ fontSize: '2rem', marginBottom: '1rem' }}>
-          Welcome back, {user.firstName || "Student"}!
+          Welcome back, {user?.name || "Student"}!
         </h1>
         <p style={{ opacity: 0.8, marginBottom: '2rem' }}>
           This is your dashboard shell. Select a course to start learning.
