@@ -5,6 +5,9 @@ export interface IUser extends mongoose.Document {
   email: string;
   password?: string;
   role: 'student' | 'admin';
+  profilePicture?: string;
+  bio?: string;
+  learningGoal?: string;
   refreshToken?: string;
   sessionId?: string;
   createdAt: Date;
@@ -17,6 +20,9 @@ const UserSchema = new mongoose.Schema<IUser>(
     email: { type: String, required: true, unique: true },
     password: { type: String },
     role: { type: String, enum: ['student', 'admin'], default: 'student' },
+    profilePicture: { type: String },
+    bio: { type: String },
+    learningGoal: { type: String },
     refreshToken: { type: String },
     sessionId: { type: String },
   },
