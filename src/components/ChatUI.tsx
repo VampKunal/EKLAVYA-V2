@@ -5,13 +5,8 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
-import { Copy, Check, Send, User, Bot, MoreHorizontal } from "lucide-react";
-
-type Message = {
-  id: string;
-  role: "user" | "assistant";
-  content: string;
-};
+import { Copy, Check, Send, User, Bot, MoreHorizontal, Save } from "lucide-react";
+import { useChat } from "@ai-sdk/react";
 
 // Copy button for code blocks
 const CodeCopyButton = ({ text }: { text: string }) => {
@@ -34,17 +29,81 @@ const CodeCopyButton = ({ text }: { text: string }) => {
   );
 };
 
-export default function ChatUI({ courseName }: { courseName?: string }) {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: "1",
-      role: "assistant",
-      content: `Hello! I'm your AI tutor for ${courseName || "this course"}. How can I help you today? \n\nYou can ask me to explain concepts, provide examples, or write code. For instance:\n\n\`\`\`javascript\nconsole.log("Hello, World!");\n\`\`\``
+export default function ChatUI({ courseId, courseName }: { courseId?: string, courseName?: string }) {
+  const { messages, input, handleInputChange, handleSubmit, isLoading, setMessages } = useChat({
+    api: '/api/chat',
+    body: {
+      courseId,
+    },
+    onFinish: (message) => {
+      // Save history after ai responds
+      if (courseId) {
+        saveHistory(courseId, [...messages, message]);
+      }
     }
-  ]);
-  const [input, setInput] = useState("");
-  const [isTyping, setIsTyping] = useState(false);
+  });
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    if (courseId) {
+      loadHistory(courseId);
+    } else if (messages.length === 0) {
+      setMessages([
+        {
+          id: "1",
+          role: "assistant",
+          content: `Hello! I'm your AI tutor for ${courseName || "this course"}. How can I help you today? \n\nYou can ask me to explain concepts, provide examples, or write code.`
+        }
+      ]);
+    }
+  }, [courseId]);
+
+  const loadHistory = async (cid: string) => {
+    try {
+      const res = await fetch(`/api/chat/history?courseId=${cid}`);
+      const data = await res.json();
+      if (data && data.messages && data.messages.length > 0) {
+        setMessages(data.messages.map((m: any) => ({
+          id: m._id || Date.now().toString() + Math.random().toString(),
+          role: m.role,
+          content: m.content
+        })));
+      } else {
+        setMessages([
+          {
+            id: "1",
+            role: "assistant",
+            content: `Hello! I'm your AI tutor for ${courseName || "this course"}. How can I help you today? \n\nYou can ask me to explain concepts, provide examples, or write code.`
+          }
+        ]);
+      }
+    } catch (e) {
+      console.error('Failed to load history', e);
+    }
+  };
+
+  const saveHistory = async (cid: string, updatedMessages: any[]) => {
+    try {
+      setIsSaving(true);
+      await fetch('/api/chat/history', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          courseId: cid,
+          messages: updatedMessages.map(m => ({
+            role: m.role,
+            content: m.content,
+          }))
+        })
+      });
+    } catch (e) {
+      console.error('Failed to save history', e);
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -52,31 +111,20 @@ export default function ChatUI({ courseName }: { courseName?: string }) {
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages, isTyping]);
+  }, [messages, isLoading]);
 
-  const handleSend = async () => {
+  const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
     if (!input.trim()) return;
+    
+    // Create optimistic user message for saving
+    const userMessage = { id: Date.now().toString(), role: "user", content: input };
+    if (courseId) {
+       // We save user msg + previous msgs. The assistant response will be saved in onFinish.
+       saveHistory(courseId, [...messages, userMessage]);
+    }
 
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      role: "user",
-      content: input
-    };
-
-    setMessages(prev => [...prev, userMessage]);
-    setInput("");
-    setIsTyping(true);
-
-    // Simulate AI response
-    setTimeout(() => {
-      const aiMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: "assistant",
-        content: `Here is a response to your query about **${userMessage.content.substring(0, 20)}...**\n\n### Example Code\n\n\`\`\`typescript\nfunction example() {\n  return "This is a simulated response!";\n}\n\`\`\`\n\nHope that helps!`
-      };
-      setMessages(prev => [...prev, aiMessage]);
-      setIsTyping(false);
-    }, 1500);
+    handleSubmit(e);
   };
 
   return (
@@ -88,7 +136,7 @@ export default function ChatUI({ courseName }: { courseName?: string }) {
             <Bot className="w-5 h-5" />
           </div>
           <div>
-            <h3 className="font-semibold text-gray-900 dark:text-white">AI Tutor</h3>
+            <h3 className="font-semibold text-gray-900 dark:text-white">AI Tutor {isSaving && <Save className="w-3 h-3 inline animate-pulse text-gray-400 ml-2" />}</h3>
             <p className="text-xs text-gray-500 dark:text-gray-400">Always online to help you</p>
           </div>
         </div>
@@ -165,7 +213,7 @@ export default function ChatUI({ courseName }: { courseName?: string }) {
           </div>
         ))}
 
-        {isTyping && (
+        {isLoading && messages.length > 0 && messages[messages.length - 1].role === 'user' && (
           <div className="flex gap-4 flex-row">
             <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900 flex shrink-0 items-center justify-center text-blue-600 dark:text-blue-400">
               <Bot className="w-5 h-5" />
@@ -183,16 +231,17 @@ export default function ChatUI({ courseName }: { courseName?: string }) {
       {/* Input Area */}
       <div className="p-4 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800">
         <form 
-          onSubmit={(e) => { e.preventDefault(); handleSend(); }}
+          onSubmit={onSubmit}
           className="flex gap-2 relative items-end"
         >
           <textarea
             value={input}
-            onChange={(e) => setInput(e.target.value)}
+            onChange={handleInputChange}
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey) {
                 e.preventDefault();
-                handleSend();
+                // trigger form submit
+                e.currentTarget.form?.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
               }
             }}
             placeholder="Type your question... (Shift+Enter for new line)"
@@ -201,7 +250,7 @@ export default function ChatUI({ courseName }: { courseName?: string }) {
           />
           <button
             type="submit"
-            disabled={!input.trim() || isTyping}
+            disabled={!input.trim() || isLoading}
             className="absolute right-2 bottom-2 p-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             <Send className="w-4 h-4" />
