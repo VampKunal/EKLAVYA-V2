@@ -29,19 +29,27 @@ const CodeCopyButton = ({ text }: { text: string }) => {
   );
 };
 
+import { DefaultChatTransport } from "ai";
+
 export default function ChatUI({ courseId, courseName }: { courseId?: string, courseName?: string }) {
-  const { messages, input, handleInputChange, handleSubmit, isLoading, setMessages } = useChat({
-    api: '/api/chat',
-    body: {
-      courseId,
-    },
-    onFinish: (message) => {
+  const [input, setInput] = useState("");
+  
+  const { messages, sendMessage, status, setMessages } = useChat({
+    transport: new DefaultChatTransport({
+      api: '/api/chat',
+      body: {
+        courseId,
+      }
+    }),
+    onFinish: ({ message }) => {
       // Save history after ai responds
       if (courseId) {
         saveHistory(courseId, [...messages, message]);
       }
     }
   });
+
+  const isLoading = status === 'submitted' || status === 'streaming';
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -54,7 +62,7 @@ export default function ChatUI({ courseId, courseName }: { courseId?: string, co
         {
           id: "1",
           role: "assistant",
-          content: `Hello! I'm your AI tutor for ${courseName || "this course"}. How can I help you today? \n\nYou can ask me to explain concepts, provide examples, or write code.`
+          parts: [{ type: 'text', text: `Hello! I'm your AI tutor for ${courseName || "this course"}. How can I help you today? \n\nYou can ask me to explain concepts, provide examples, or write code.` }]
         }
       ]);
     }
@@ -68,14 +76,14 @@ export default function ChatUI({ courseId, courseName }: { courseId?: string, co
         setMessages(data.messages.map((m: any) => ({
           id: m._id || Date.now().toString() + Math.random().toString(),
           role: m.role,
-          content: m.content
+          parts: [{ type: 'text', text: m.content || '' }]
         })));
       } else {
         setMessages([
           {
             id: "1",
             role: "assistant",
-            content: `Hello! I'm your AI tutor for ${courseName || "this course"}. How can I help you today? \n\nYou can ask me to explain concepts, provide examples, or write code.`
+            parts: [{ type: 'text', text: `Hello! I'm your AI tutor for ${courseName || "this course"}. How can I help you today? \n\nYou can ask me to explain concepts, provide examples, or write code.` }]
           }
         ]);
       }
@@ -94,7 +102,7 @@ export default function ChatUI({ courseId, courseName }: { courseId?: string, co
           courseId: cid,
           messages: updatedMessages.map(m => ({
             role: m.role,
-            content: m.content,
+            content: m.parts?.filter((p: any) => p.type === 'text').map((p: any) => p.text).join('\n') || (m as any).content || '',
           }))
         })
       });
@@ -113,18 +121,23 @@ export default function ChatUI({ courseId, courseName }: { courseId?: string, co
     scrollToBottom();
   }, [messages, isLoading]);
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setInput(e.target.value);
+  };
+
   const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!input.trim()) return;
     
     // Create optimistic user message for saving
-    const userMessage = { id: Date.now().toString(), role: "user", content: input };
+    const userMessage = { id: Date.now().toString(), role: "user" as const, parts: [{ type: 'text' as const, text: input }] };
     if (courseId) {
        // We save user msg + previous msgs. The assistant response will be saved in onFinish.
        saveHistory(courseId, [...messages, userMessage]);
     }
 
-    handleSubmit(e);
+    sendMessage({ text: input });
+    setInput("");
   };
 
   return (
@@ -158,14 +171,14 @@ export default function ChatUI({ courseId, courseName }: { courseId?: string, co
                 }`}
               >
                 {msg.role === "user" ? (
-                  <p className="whitespace-pre-wrap">{msg.content}</p>
+                  <p className="whitespace-pre-wrap">{msg.parts?.filter(p => p.type === 'text').map(p => (p as any).text).join('\n')}</p>
                 ) : (
                   <div className="prose prose-sm dark:prose-invert max-w-none prose-pre:p-0 prose-pre:bg-transparent">
                     <ReactMarkdown
                       remarkPlugins={[remarkGfm]}
                       components={{
                         code(props) {
-                          const { children, className, node, ...rest } = props;
+                          const { children, className, node, ref, ...rest } = props;
                           const match = /language-(\w+)/.exec(className || "");
                           const isInline = !match && !String(children).includes("\n");
                           
@@ -201,7 +214,7 @@ export default function ChatUI({ courseId, courseName }: { courseId?: string, co
                         },
                       }}
                     >
-                      {msg.content}
+                      {msg.parts?.filter(p => p.type === 'text').map(p => (p as any).text).join('\n')}
                     </ReactMarkdown>
                   </div>
                 )}

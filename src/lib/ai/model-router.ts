@@ -1,16 +1,16 @@
 import { openai } from '@ai-sdk/openai';
 import { google } from '@ai-sdk/google';
 import { anthropic } from '@ai-sdk/anthropic';
-import { LanguageModelV1 } from '@ai-sdk/provider';
+import type { LanguageModel } from 'ai';
 
 type TaskType = 'coding' | 'math' | 'general' | 'fast' | 'reasoning';
 
 interface ModelRouter {
-  getBestModel: (task: TaskType) => LanguageModelV1;
+  getBestModel: (task: TaskType) => LanguageModel;
 }
 
 export const modelRouter: ModelRouter = {
-  getBestModel: (task: TaskType): LanguageModelV1 => {
+  getBestModel: (task: TaskType): LanguageModel => {
     switch (task) {
       case 'coding':
         // Claude 3.5 Sonnet is excellent for coding
