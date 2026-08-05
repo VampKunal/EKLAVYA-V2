@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import Course from '@/models/Course';
+import '@/models/Subject'; // register Subject schema for populate()
 import connectToDatabase from '@/lib/mongodb';
 import { asyncHandler } from '@/utils/asyncHandler';
 
