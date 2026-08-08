@@ -1,4 +1,5 @@
 import { QdrantClient } from '@qdrant/js-client-rest';
+import { EMBEDDING_DIMENSIONS } from '@/utils/embeddings';
 
 const url = process.env.QDRANT_URL;
 const apiKey = process.env.QDRANT_API_KEY;
@@ -18,7 +19,7 @@ export async function ensureCollection() {
     if (!exists) {
       await qdrantClient.createCollection(COLLECTION_NAME, {
         vectors: {
-          size: 1536,
+          size: EMBEDDING_DIMENSIONS,
           distance: 'Cosine',
         },
       });
