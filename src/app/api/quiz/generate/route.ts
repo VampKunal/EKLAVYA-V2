@@ -19,12 +19,39 @@ export const POST = asyncHandler(async (req: Request) => {
     return NextResponse.json({ message: 'Topic is required' }, { status: 400 });
   }
 
+  await connectToDatabase();
+
+  // --- RAG context retrieval ---
   let context = '';
+  let ragWarning: string | undefined;
+
   if (courseId) {
-    context = await retrieveContext(topic, courseId, 5);
+    // Query expansion: a descriptive sentence retrieves better chunks than a bare topic word.
+    // The embedding of "Key concepts about X for MCQs" sits closer in vector space to
+    // factual paragraphs than the embedding of just "X".
+    const retrievalQuery = `Key concepts, definitions, important facts, and examples about ${topic} that would be useful for multiple choice questions`;
+    const ragResult = await retrieveContext(retrievalQuery, courseId, 5);
+    context = ragResult.context;
+
+    if (ragResult.error) {
+      // RAG failed (e.g. Qdrant index missing, network error).
+      // We continue with general knowledge but surface the warning to the client.
+      ragWarning = `RAG retrieval failed: ${ragResult.error}. Quiz generated from general knowledge.`;
+      console.warn('[quiz/generate]', ragWarning);
+    } else if (!ragResult.hasContext) {
+      console.log('[quiz/generate] No uploaded materials found for this course — using general knowledge.');
+    } else {
+      console.log('[quiz/generate] RAG context retrieved successfully.');
+    }
   }
 
+  // --- Quiz generation ---
   const quiz = await generateQuiz(topic, context, count || 5);
 
-  return NextResponse.json({ quiz });
+  return NextResponse.json({
+    quiz,
+    // Inform client if quiz was generated without course context
+    ...(ragWarning ? { warning: ragWarning } : {}),
+    usedContext: !!context,
+  });
 });

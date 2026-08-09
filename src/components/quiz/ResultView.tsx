@@ -1,5 +1,5 @@
 import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/Card';
 import { CheckCircle, XCircle, Clock, Trophy } from 'lucide-react';
 
 interface QuestionResult {

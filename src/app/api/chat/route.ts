@@ -36,9 +36,12 @@ export async function POST(req: Request) {
       systemPrompt += `\nYou are currently helping the student with the course ID: ${courseId}. Contextualize your answers accordingly.`;
       
       if (intent === 'doubt' || intent === 'general') {
-        const ragContext = await retrieveContext(latestMessage.content, courseId);
-        if (ragContext) {
-          systemPrompt += `\n\nUse the following course material context to answer the student's question. If the context is not relevant, ignore it.\n\nContext:\n${ragContext}`;
+        const ragResult = await retrieveContext(latestMessage.content, courseId);
+        if (ragResult.hasContext && ragResult.context) {
+          systemPrompt += `\n\nUse the following course material context to answer the student's question. If the context is not relevant, ignore it.\n\nContext:\n${ragResult.context}`;
+        }
+        if (ragResult.error) {
+          console.warn('[chat] RAG retrieval failed:', ragResult.error);
         }
       }
     }

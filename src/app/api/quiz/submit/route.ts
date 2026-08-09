@@ -23,7 +23,8 @@ export const POST = asyncHandler(async (req: Request) => {
 
   let correctCount = 0;
   const gradedQuestions = questions.map((q: any) => {
-    const isCorrect = q.userAnswer === q.correctAnswer;
+    // Trim both sides — LLMs often add trailing whitespace/newlines to correctAnswer
+    const isCorrect = q.userAnswer?.trim() === q.correctAnswer?.trim();
     if (isCorrect) correctCount++;
     return {
       questionText: q.questionText,
@@ -40,6 +41,7 @@ export const POST = asyncHandler(async (req: Request) => {
     userId: session.user.id,
     courseId,
     subjectId,
+    topic,
     questions: gradedQuestions,
     score,
     timeTaken,

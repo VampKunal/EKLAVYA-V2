@@ -8,7 +8,7 @@ import { upsertDocumentChunks } from '@/lib/vector/qdrant';
 import pdfParse from 'pdf-parse/lib/pdf-parse.js';
 import mammoth from 'mammoth';
 
-export const maxDuration = 60; // Extend duration for file processing
+export const maxDuration = 300; // Extended for rate-limited embedding (5 min)
 
 function chunkText(text: string, chunkSize: number = 1000, overlap: number = 200): string[] {
   const chunks: string[] = [];

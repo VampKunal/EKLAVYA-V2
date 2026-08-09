@@ -5,7 +5,7 @@ import QuizAttempt from '@/models/QuizAttempt';
 import Course from '@/models/Course';
 import { redirect } from 'next/navigation';
 import { QuizDashboardClient } from './QuizDashboardClient';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Trophy, Clock, Target } from 'lucide-react';
 import Link from 'next/link';
 

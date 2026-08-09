@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { Button } from '@/components/ui/Button';
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/Card';
 import { ResultView } from '@/components/quiz/ResultView';
 import { Loader2 } from 'lucide-react';
 

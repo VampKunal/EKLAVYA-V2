@@ -4,6 +4,7 @@ export interface IQuizAttempt extends mongoose.Document {
   userId: mongoose.Types.ObjectId;
   courseId: mongoose.Types.ObjectId;
   subjectId?: mongoose.Types.ObjectId;
+  topic?: string;
   questions: {
     questionText: string;
     options: string[];
@@ -21,6 +22,7 @@ const QuizAttemptSchema = new mongoose.Schema<IQuizAttempt>(
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     courseId: { type: mongoose.Schema.Types.ObjectId, ref: 'Course', required: true },
     subjectId: { type: mongoose.Schema.Types.ObjectId, ref: 'Subject' },
+    topic: { type: String },
     questions: [
       {
         questionText: { type: String, required: true },
