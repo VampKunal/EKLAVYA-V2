@@ -1,14 +1,19 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { User, Book, Settings, LogOut, Menu } from "lucide-react";
+import { User, Book, Settings, LogOut, Menu, LayoutDashboard, BookOpen, MessageSquare, Brain, UploadCloud, BarChart } from "lucide-react";
 import { signOut } from "next-auth/react";
 
 export default function Sidebar({ isOpen, setIsOpen }: { isOpen: boolean, setIsOpen: (val: boolean) => void }) {
   const pathname = usePathname();
   
   const links = [
-    { href: "/dashboard", label: "Dashboard", icon: Book },
+    { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { href: "/courses", label: "Courses", icon: BookOpen },
+    { href: "/chat", label: "Tutor Chat", icon: MessageSquare },
+    { href: "/quiz", label: "Quizzes", icon: Brain },
+    { href: "/analytics", label: "Analytics", icon: BarChart },
+    { href: "/upload", label: "Upload Notes", icon: UploadCloud },
     { href: "/profile", label: "Profile", icon: User },
     { href: "/settings", label: "Settings", icon: Settings },
   ];

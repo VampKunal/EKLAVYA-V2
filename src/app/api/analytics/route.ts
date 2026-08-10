@@ -4,6 +4,7 @@ import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { asyncHandler } from '@/utils/asyncHandler';
 import QuizAttempt from '@/models/QuizAttempt';
 import UserProgress from '@/models/UserProgress';
+import '@/models/Course'; // register schema so populate('courseId') works
 import connectToDatabase from '@/lib/mongodb';
 
 export const GET = asyncHandler(async (req: Request) => {

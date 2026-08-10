@@ -37,7 +37,7 @@ export function ProgressChart({ data }: ProgressChartProps) {
               <Tooltip 
                 contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                 labelStyle={{ fontWeight: 'bold', color: '#111827' }}
-                formatter={(value: number) => [`${value}%`, 'Score']}
+                formatter={(value: number | undefined) => [`${value ?? 0}%`, 'Score']}
               />
               <Line 
                 type="monotone" 

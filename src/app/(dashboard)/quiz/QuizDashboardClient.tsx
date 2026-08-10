@@ -1,17 +1,31 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Plus, Loader2 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 export function QuizDashboardClient({ courses }: { courses: any[] }) {
-  const [isOpen, setIsOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [selectedCourse, setSelectedCourse] = useState('');
-  const [topic, setTopic] = useState('');
-  const [error, setError] = useState('');
   const router = useRouter();
+  const searchParams = useSearchParams();
+  
+  const initialCourseId = searchParams.get('courseId') || '';
+  const initialTopic = searchParams.get('topic') || '';
+  
+  const [isOpen, setIsOpen] = useState(!!initialCourseId || !!initialTopic);
+  const [isLoading, setIsLoading] = useState(false);
+  const [selectedCourse, setSelectedCourse] = useState(initialCourseId);
+  const [topic, setTopic] = useState(initialTopic);
+  const [error, setError] = useState('');
+
+  // Auto-open modal and pre-fill if params exist
+  useEffect(() => {
+    if (initialCourseId || initialTopic) {
+      setIsOpen(true);
+      if (initialCourseId) setSelectedCourse(initialCourseId);
+      if (initialTopic) setTopic(initialTopic);
+    }
+  }, [initialCourseId, initialTopic]);
 
   const handleGenerate = async (e: React.FormEvent) => {
     e.preventDefault();

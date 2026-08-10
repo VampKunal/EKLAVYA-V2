@@ -77,9 +77,17 @@ export function DashboardClient() {
               <CardContent>
                 <div className="space-y-3">
                   {recommendations.map((rec, idx) => (
-                    <div key={idx} className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-100 dark:border-blue-800">
-                      <p className="font-semibold text-blue-900 dark:text-blue-100 text-sm">{rec.topic}</p>
-                      <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">{rec.reason}</p>
+                    <div key={idx} className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-100 dark:border-blue-800 flex justify-between items-start gap-4">
+                      <div>
+                        <p className="font-semibold text-blue-900 dark:text-blue-100 text-sm">{rec.topic}</p>
+                        <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">{rec.reason}</p>
+                      </div>
+                      <Link 
+                        href={`/quiz?topic=${encodeURIComponent(rec.topic)}`}
+                        className="text-xs font-medium text-blue-600 bg-blue-100 hover:bg-blue-200 dark:bg-blue-800 dark:text-blue-100 dark:hover:bg-blue-700 px-3 py-1.5 rounded-md whitespace-nowrap transition-colors"
+                      >
+                        Practice
+                      </Link>
                     </div>
                   ))}
                 </div>
@@ -90,7 +98,7 @@ export function DashboardClient() {
       </div>
 
       {/* Recent Attempts Table — always visible, no topic needed */}
-      {recentAttemptsList && recentAttemptsList.length > 0 && (
+      {recentAttemptsList && recentAttemptsList.length > 0 ? (
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
@@ -143,6 +151,17 @@ export function DashboardClient() {
                 </tbody>
               </table>
             </div>
+          </CardContent>
+        </Card>
+      ) : (
+        <Card className="bg-slate-50 dark:bg-slate-900/50 border-dashed">
+          <CardContent className="flex flex-col items-center justify-center py-10 text-center">
+            <Brain className="w-12 h-12 text-slate-300 mb-4" />
+            <h3 className="text-lg font-medium text-slate-900 dark:text-white mb-2">No Quizzes Taken Yet</h3>
+            <p className="text-sm text-slate-500 max-w-sm mb-6">Start taking quizzes to build your streak and see your analytics.</p>
+            <Link href="/quiz" className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg text-sm font-medium transition-colors">
+              Take Your First Quiz
+            </Link>
           </CardContent>
         </Card>
       )}
