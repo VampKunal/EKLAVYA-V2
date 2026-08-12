@@ -1,8 +1,35 @@
 import json
 from typing import TypedDict, List, Dict, Any
 from langgraph.graph import StateGraph, END
-from langchain_openai import ChatOpenAI
 from config import settings
+
+def get_llm():
+    """Return Google Gemini (gemini-2.5-flash) if key is present, else OpenRouter / OpenAI fallback."""
+    if settings.GOOGLE_AI_API_KEY:
+        try:
+            from langchain_google_genai import ChatGoogleGenerativeAI
+            return ChatGoogleGenerativeAI(
+                model="gemini-2.5-flash",
+                google_api_key=settings.GOOGLE_AI_API_KEY,
+                temperature=0.3
+            )
+        except Exception as e:
+            print(f"[Curriculum Agent] Google GenAI init warning: {e}")
+
+    if settings.OPENROUTER_API_KEY:
+        try:
+            from langchain_openai import ChatOpenAI
+            return ChatOpenAI(
+                model="google/gemini-2.5-flash",
+                openai_api_key=settings.OPENROUTER_API_KEY,
+                openai_api_base="https://openrouter.ai/api/v1",
+                temperature=0.3
+            )
+        except Exception as e:
+            print(f"[Curriculum Agent] OpenRouter init warning: {e}")
+
+    from langchain_openai import ChatOpenAI
+    return ChatOpenAI(model="gpt-4o-mini", api_key=settings.OPENAI_API_KEY, temperature=0.3)
 
 class CurriculumState(TypedDict):
     student_goal: str
@@ -13,7 +40,7 @@ class CurriculumState(TypedDict):
     final_roadmap: Dict[str, Any]
 
 def draft_roadmap_node(state: CurriculumState) -> dict:
-    llm = ChatOpenAI(model="gpt-4o-mini", api_key=settings.OPENAI_API_KEY, temperature=0.3)
+    llm = get_llm()
     
     prompt = f"""Design a 4-week structured personalized study roadmap for a student.
 
@@ -21,7 +48,7 @@ Goal: {state['student_goal']}
 Weak Topics to prioritize: {', '.join(state['weak_topics']) if state['weak_topics'] else 'General curriculum'}
 Available Study Time: {state['available_hours_per_week']} hours/week
 
-Respond strictly in JSON:
+Respond strictly in valid JSON matching this schema:
 {{
   "title": "string",
   "weeks": [
@@ -35,13 +62,17 @@ Respond strictly in JSON:
 }}"""
 
     try:
-        res = llm.invoke(prompt).content.strip()
-        if res.startswith("```json"):
-            res = res[7:]
-        if res.endswith("```"):
-            res = res[:-3]
-        draft = json.loads(res.strip())
-    except Exception:
+        res = llm.invoke(prompt)
+        text = res.content.strip()
+        if text.startswith("```json"):
+            text = text[7:]
+        if text.startswith("```"):
+            text = text[3:]
+        if text.endswith("```"):
+            text = text[:-3]
+        draft = json.loads(text.strip())
+    except Exception as e:
+        print(f"[Curriculum Agent] Draft parsing error: {e}")
         draft = {"title": "Standard Learning Roadmap", "weeks": []}
 
     return {"roadmap_draft": draft}
@@ -58,7 +89,7 @@ def validate_roadmap_node(state: CurriculumState) -> dict:
     return {"validation_status": "VALID"}
 
 def refine_roadmap_node(state: CurriculumState) -> dict:
-    llm = ChatOpenAI(model="gpt-4o-mini", api_key=settings.OPENAI_API_KEY, temperature=0.2)
+    llm = get_llm()
     draft = state.get("roadmap_draft", {})
     
     prompt = f"""Refine this study plan to fit strictly within {state['available_hours_per_week']} hours per week without burning out the student.
@@ -69,13 +100,17 @@ Overloaded Plan:
 Respond strictly with valid JSON with adjusted estimatedHours."""
 
     try:
-        res = llm.invoke(prompt).content.strip()
-        if res.startswith("```json"):
-            res = res[7:]
-        if res.endswith("```"):
-            res = res[:-3]
-        refined = json.loads(res.strip())
-    except Exception:
+        res = llm.invoke(prompt)
+        text = res.content.strip()
+        if text.startswith("```json"):
+            text = text[7:]
+        if text.startswith("```"):
+            text = text[3:]
+        if text.endswith("```"):
+            text = text[:-3]
+        refined = json.loads(text.strip())
+    except Exception as e:
+        print(f"[Curriculum Agent] Refine parsing error: {e}")
         refined = draft
 
     return {"final_roadmap": refined}

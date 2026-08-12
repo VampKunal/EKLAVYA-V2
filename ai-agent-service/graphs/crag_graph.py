@@ -1,9 +1,35 @@
 from typing import List, TypedDict
 from langgraph.graph import StateGraph, END
-from langchain_openai import ChatOpenAI, OpenAIEmbeddings
-from qdrant_client import QdrantClient
 from tavily import TavilyClient
 from config import settings
+
+def get_llm():
+    """Return Google Gemini (gemini-2.5-flash) if key is present, else OpenRouter / OpenAI fallback."""
+    if settings.GOOGLE_AI_API_KEY:
+        try:
+            from langchain_google_genai import ChatGoogleGenerativeAI
+            return ChatGoogleGenerativeAI(
+                model="gemini-2.5-flash",
+                google_api_key=settings.GOOGLE_AI_API_KEY,
+                temperature=0.1
+            )
+        except Exception as e:
+            print(f"[CRAG Graph] Google GenAI init warning: {e}")
+
+    if settings.OPENROUTER_API_KEY:
+        try:
+            from langchain_openai import ChatOpenAI
+            return ChatOpenAI(
+                model="google/gemini-2.5-flash",
+                openai_api_key=settings.OPENROUTER_API_KEY,
+                openai_api_base="https://openrouter.ai/api/v1",
+                temperature=0.1
+            )
+        except Exception as e:
+            print(f"[CRAG Graph] OpenRouter init warning: {e}")
+
+    from langchain_openai import ChatOpenAI
+    return ChatOpenAI(model="gpt-4o-mini", api_key=settings.OPENAI_API_KEY, temperature=0.1)
 
 # State Schema
 class CRAGState(TypedDict):
@@ -23,9 +49,7 @@ def retrieve_node(state: CRAGState) -> dict:
     docs = []
     
     try:
-        embeddings = OpenAIEmbeddings(api_key=settings.OPENAI_API_KEY, model="text-embedding-3-small")
-        query_vector = embeddings.embed_query(question)
-        
+        from qdrant_client import QdrantClient
         client = QdrantClient(url=settings.QDRANT_URL, api_key=settings.QDRANT_API_KEY if settings.QDRANT_API_KEY else None)
         
         # Build filter if course_id provided
@@ -41,14 +65,14 @@ def retrieve_node(state: CRAGState) -> dict:
                 ]
             )
             
-        search_result = client.search(
+        # Try dense vector search or payload scroll
+        search_result = client.scroll(
             collection_name=settings.QDRANT_COLLECTION,
-            query_vector=query_vector,
-            query_filter=filter_params,
+            scroll_filter=filter_params,
             limit=4
         )
-        
-        docs = [hit.payload.get("text", "") for hit in search_result if hit.payload and "text" in hit.payload]
+        points, _ = search_result
+        docs = [p.payload.get("text", "") for p in points if p.payload and "text" in p.payload]
     except Exception as e:
         print(f"[CRAG Graph] Vector retrieval error: {e}")
         docs = []
@@ -63,7 +87,7 @@ def grade_documents_node(state: CRAGState) -> dict:
     if not documents:
         return {"is_relevant": False, "web_search_needed": True}
         
-    llm = ChatOpenAI(model="gpt-4o-mini", api_key=settings.OPENAI_API_KEY, temperature=0)
+    llm = get_llm()
     context_str = "\n\n".join(documents)
     
     prompt = f"""You are a strict relevance grader. Determine if the following documents contain sufficient relevant information to accurately answer the student's question.
@@ -76,8 +100,9 @@ Documents:
 Respond with EXACTLY 'YES' if relevant or 'NO' if irrelevant/insufficient."""
 
     try:
-        res = llm.invoke(prompt).content.strip().upper()
-        is_rel = "YES" in res
+        res = llm.invoke(prompt)
+        text = res.content.strip().upper()
+        is_rel = "YES" in text
         return {"is_relevant": is_rel, "web_search_needed": not is_rel}
     except Exception as e:
         print(f"[CRAG Graph] Grading error: {e}")
@@ -109,7 +134,7 @@ def generate_node(state: CRAGState) -> dict:
     documents = state.get("documents", [])
     web_searched = state.get("web_search_needed", False)
     
-    llm = ChatOpenAI(model="gpt-4o-mini", api_key=settings.OPENAI_API_KEY, temperature=0.3)
+    llm = get_llm()
     context_str = "\n\n---\n\n".join(documents) if documents else "No external context found."
     
     prompt = f"""You are Eklavya AI, an expert AI tutor. Answer the student's question clearly and concisely.
@@ -123,7 +148,8 @@ Retrieved Context:
 Answer:"""
 
     try:
-        answer = llm.invoke(prompt).content
+        res = llm.invoke(prompt)
+        answer = res.content
     except Exception as e:
         answer = f"I apologize, but I encountered an error generating an answer: {str(e)}"
         

@@ -4,17 +4,32 @@ from langgraph.graph import StateGraph, END
 from config import settings
 
 def get_llm():
-    """Return Google Gemini 1.5 Flash (free tier eligible, active non-deprecated model) if key is present, else OpenAI."""
+    """Return Google Gemini (gemini-2.5-flash) if key is present, else OpenRouter / OpenAI fallback."""
     if settings.GOOGLE_AI_API_KEY:
-        from langchain_google_genai import ChatGoogleGenerativeAI
-        return ChatGoogleGenerativeAI(
-            model="gemini-1.5-flash",
-            google_api_key=settings.GOOGLE_AI_API_KEY,
-            temperature=0.2
-        )
-    else:
-        from langchain_openai import ChatOpenAI
-        return ChatOpenAI(model="gpt-4o-mini", api_key=settings.OPENAI_API_KEY, temperature=0.2)
+        try:
+            from langchain_google_genai import ChatGoogleGenerativeAI
+            return ChatGoogleGenerativeAI(
+                model="gemini-2.5-flash",
+                google_api_key=settings.GOOGLE_AI_API_KEY,
+                temperature=0.2
+            )
+        except Exception as e:
+            print(f"[Quiz Remediation] Google GenAI init warning: {e}")
+
+    if settings.OPENROUTER_API_KEY:
+        try:
+            from langchain_openai import ChatOpenAI
+            return ChatOpenAI(
+                model="google/gemini-2.5-flash",
+                openai_api_key=settings.OPENROUTER_API_KEY,
+                openai_api_base="https://openrouter.ai/api/v1",
+                temperature=0.2
+            )
+        except Exception as e:
+            print(f"[Quiz Remediation] OpenRouter init warning: {e}")
+
+    from langchain_openai import ChatOpenAI
+    return ChatOpenAI(model="gpt-4o-mini", api_key=settings.OPENAI_API_KEY, temperature=0.2)
 
 class QuizRemediationState(TypedDict):
     topic: str
@@ -80,7 +95,7 @@ def generate_retry_question_node(state: QuizRemediationState) -> dict:
 Topic: {state['topic']}
 Addressed Misconception: {state['misconception']}
 
-Respond strictly in valid JSON format matching this schema without any conversational intro:
+Respond strictly in valid JSON format matching this schema without any markdown formatting or extra commentary:
 {{
   "questionText": "string",
   "options": ["string", "string", "string", "string"],
