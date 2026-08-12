@@ -15,8 +15,32 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Eklavya AI | Intelligent Learning Platform",
-  description: "Eklavya AI is a next-generation learning platform powered by artificial intelligence, offering personalized courses, real-time doubts resolution, and analytics.",
+  title: "Eklavya AI | Master Any Subject with Your Personal AI Tutor",
+  description: "Eklavya analyzes your learning style, tracks your weak points, and delivers personalized quizzes, notes, and AI-driven insights to accelerate your mastery.",
+  keywords: ["AI Tutor", "Learning Platform", "Personalized Learning", "Adaptive RAG Learning", "E-learning"],
+  authors: [{ name: "Eklavya AI Team" }],
+  openGraph: {
+    title: "Eklavya AI | Master Any Subject with Your Personal AI Tutor",
+    description: "Eklavya analyzes your learning style, tracks your weak points, and delivers personalized quizzes, notes, and AI-driven insights to accelerate your mastery.",
+    url: "https://eklavya.ai",
+    siteName: "Eklavya AI",
+    images: [
+      {
+        url: "/og-image.jpg",
+        width: 1200,
+        height: 630,
+        alt: "Eklavya AI Learning Platform",
+      },
+    ],
+    locale: "en_US",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Eklavya AI | Master Any Subject with Your Personal AI Tutor",
+    description: "Eklavya analyzes your learning style, tracks your weak points, and delivers personalized quizzes, notes, and AI-driven insights to accelerate your mastery.",
+    images: ["/og-image.jpg"],
+  },
 };
 
 export default function RootLayout({

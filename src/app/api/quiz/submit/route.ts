@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { authOptions } from '@/lib/auth';
 import { asyncHandler } from '@/utils/asyncHandler';
 import QuizAttempt from '@/models/QuizAttempt';
 import UserProgress from '@/models/UserProgress';
@@ -61,22 +61,75 @@ export const POST = asyncHandler(async (req: Request) => {
       courseId,
       subjectId,
       topicsMastered: score >= 80 && topic ? [topic] : [],
+      weakTopics: [],
+      topicsPracticed: [],
       accuracy: score,
       streakDays: 1,
       lastActivity: new Date(),
     });
   } else {
-    // Update accuracy (moving average or simple average, here we do a simple weighted average)
     progress.accuracy = Math.round((progress.accuracy + score) / 2);
     progress.lastActivity = new Date();
-    
-    // Add topic to mastered if score >= 80
-    if (score >= 80 && topic && !progress.topicsMastered.includes(topic)) {
-      progress.topicsMastered.push(topic);
+  }
+
+  if (topic) {
+    // 1. Update topicsPracticed
+    const existingPracticeIndex = (progress.topicsPracticed || []).findIndex((tp: any) => tp.topic.toLowerCase() === topic.toLowerCase());
+    if (existingPracticeIndex >= 0) {
+      const prev = progress.topicsPracticed[existingPracticeIndex];
+      const newAttempts = prev.attempts + 1;
+      const newAvg = Math.round((prev.averageScore * prev.attempts + score) / newAttempts);
+      progress.topicsPracticed[existingPracticeIndex] = {
+        topic,
+        attempts: newAttempts,
+        averageScore: newAvg,
+        lastPracticed: new Date(),
+      };
+    } else {
+      progress.topicsPracticed = progress.topicsPracticed || [];
+      progress.topicsPracticed.push({
+        topic,
+        attempts: 1,
+        averageScore: score,
+        lastPracticed: new Date(),
+      });
     }
+
+    // 2. Classify Weak vs Mastered Topic
+    if (score < 75) {
+      // Weak topic -> Add/Update weakTopics with recommended action
+      const action = `Accuracy is ${score}%. Practice weak sub-topics of "${topic}" and review reference notes.`;
+      const weakIndex = (progress.weakTopics || []).findIndex((wt: any) => wt.topic.toLowerCase() === topic.toLowerCase());
+      if (weakIndex >= 0) {
+        progress.weakTopics[weakIndex] = {
+          topic,
+          accuracy: score,
+          recommendedAction: action,
+          updatedAt: new Date(),
+        };
+      } else {
+        progress.weakTopics = progress.weakTopics || [];
+        progress.weakTopics.push({
+          topic,
+          accuracy: score,
+          recommendedAction: action,
+          updatedAt: new Date(),
+        });
+      }
+      // Remove from mastered if accuracy dropped below 75%
+      progress.topicsMastered = (progress.topicsMastered || []).filter((t: string) => t.toLowerCase() !== topic.toLowerCase());
+    } else {
+      // Mastered / Good score -> Remove from weakTopics
+      progress.weakTopics = (progress.weakTopics || []).filter((wt: any) => wt.topic.toLowerCase() !== topic.toLowerCase());
+      if (score >= 80 && !progress.topicsMastered.some((t: string) => t.toLowerCase() === topic.toLowerCase())) {
+        progress.topicsMastered.push(topic);
+      }
+    }
+
   }
 
   await progress.save();
+
 
   return NextResponse.json({ attempt, progress });
 });

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { authOptions } from '@/lib/auth';
 import { asyncHandler } from '@/utils/asyncHandler';
 import { generateQuiz } from '@/lib/ai/quiz-generator';
 import { retrieveContext } from '@/lib/ai/rag';

@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { authOptions } from '@/lib/auth';
 import dbConnect from '@/lib/mongodb';
 import UploadedFile from '@/models/UploadedFile';
 import { generateEmbeddings } from '@/utils/embeddings';
 import { upsertDocumentChunks } from '@/lib/vector/qdrant';
+// @ts-ignore
 import pdfParse from 'pdf-parse/lib/pdf-parse.js';
 import mammoth from 'mammoth';
 

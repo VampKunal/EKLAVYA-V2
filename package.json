@@ -21,6 +21,8 @@
     "@tailwindcss/typography": "^0.5.20",
     "@types/pdf-parse": "^1.1.5",
     "@types/react-syntax-highlighter": "^15.5.13",
+    "@upstash/ratelimit": "^2.0.8",
+    "@upstash/redis": "^1.38.2",
     "ai": "^7.0.48",
     "bcryptjs": "^3.0.3",
     "cookie": "^2.0.0",
@@ -40,6 +42,7 @@
     "react-syntax-highlighter": "^16.1.1",
     "recharts": "^3.10.1",
     "remark-gfm": "^4.0.1",
+    "sonner": "^2.0.8",
     "tailwindcss": "^4.3.1"
   },
   "devDependencies": {

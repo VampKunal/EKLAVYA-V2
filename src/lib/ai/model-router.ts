@@ -71,6 +71,7 @@ function createFallbackModel(
   fallbackId: string,
 ): LanguageModel {
   // We implement this via a Proxy that intercepts doGenerate / doStream
+  // @ts-ignore
   return new Proxy(primary, {
     get(target, prop) {
       const original = (target as any)[prop];

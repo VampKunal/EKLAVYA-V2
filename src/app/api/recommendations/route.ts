@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { authOptions } from '@/lib/auth';
 import { asyncHandler } from '@/utils/asyncHandler';
 import QuizAttempt from '@/models/QuizAttempt';
 import connectToDatabase from '@/lib/mongodb';
@@ -15,16 +15,38 @@ export const GET = asyncHandler(async (req: Request) => {
   await connectToDatabase();
   const userId = session.user.id;
 
+  const UserProgress = (await import('@/models/UserProgress')).default;
+  const progressRecords = await UserProgress.find({ userId }).lean();
+
+  const recommendations: any[] = [];
+  const masteredTopics = new Set<string>();
+
+  progressRecords.forEach((p: any) => {
+    (p.topicsMastered || []).forEach((t: string) => masteredTopics.add(t.toLowerCase()));
+    
+    (p.weakTopics || []).forEach((wt: any) => {
+      if (!masteredTopics.has(wt.topic.toLowerCase())) {
+        recommendations.push({
+          topic: wt.topic,
+          subTopic: wt.subTopic,
+          courseId: p.courseId?.toString(),
+          reason: wt.recommendedAction || `Low accuracy (${wt.accuracy}%). Needs targeted review.`,
+          type: 'weak',
+          priority: 1,
+        });
+      }
+    });
+  });
+
   const attempts = await QuizAttempt.find({ userId }).lean();
+  const topicStats: Record<string, { totalScore: number; count: number; lastAttemptDate: Date; courseId: string }> = {};
 
-  const topicStats: Record<string, { totalScore: number, count: number, lastAttemptDate: Date, courseId: string }> = {};
-
-  attempts.forEach(attempt => {
-    if (attempt.topic && attempt.courseId) {
+  attempts.forEach((attempt) => {
+    if (attempt.topic && attempt.courseId && !masteredTopics.has(attempt.topic.toLowerCase())) {
       if (!topicStats[attempt.topic]) {
-        topicStats[attempt.topic] = { 
-          totalScore: 0, 
-          count: 0, 
+        topicStats[attempt.topic] = {
+          totalScore: 0,
+          count: 0,
           lastAttemptDate: attempt.createdAt,
           courseId: attempt.courseId.toString(),
         };
@@ -38,35 +60,38 @@ export const GET = asyncHandler(async (req: Request) => {
   });
 
   const now = new Date();
-  
-  const recommendations: any[] = [];
 
-  Object.keys(topicStats).forEach(topic => {
+  Object.keys(topicStats).forEach((topic) => {
     const stats = topicStats[topic];
     const accuracy = Math.round(stats.totalScore / stats.count);
     const daysSince = Math.floor((now.getTime() - new Date(stats.lastAttemptDate).getTime()) / (1000 * 3600 * 24));
 
-    if (accuracy < 70) {
-      recommendations.push({
-        topic,
-        courseId: stats.courseId,
-        reason: 'Low accuracy in recent quizzes. Needs review.',
-        type: 'weak',
-        priority: 1, // highest priority
-      });
-    } else if (daysSince > 10 && accuracy >= 80) {
-      recommendations.push({
-        topic,
-        courseId: stats.courseId,
-        reason: 'It has been a while since you practiced this topic. Refresh your memory.',
-        type: 'refresh',
-        priority: 2,
-      });
+    const alreadyAdded = recommendations.some((r) => r.topic.toLowerCase() === topic.toLowerCase());
+
+    if (!alreadyAdded) {
+      if (accuracy < 70) {
+        recommendations.push({
+          topic,
+          courseId: stats.courseId,
+          reason: `Accuracy is ${accuracy}%. Needs practice on weak sub-topics.`,
+          type: 'weak',
+          priority: 1,
+        });
+      } else if (daysSince > 10 && accuracy >= 75) {
+        recommendations.push({
+          topic,
+          courseId: stats.courseId,
+          reason: 'It has been a while since you practiced this topic. Refresh your memory.',
+          type: 'refresh',
+          priority: 2,
+        });
+      }
     }
   });
 
-  // Sort by priority and return top 3
+  // Sort by priority and return top 5
   recommendations.sort((a, b) => a.priority - b.priority);
 
-  return NextResponse.json({ recommendations: recommendations.slice(0, 3) });
+  return NextResponse.json({ recommendations: recommendations.slice(0, 5) });
 });
+

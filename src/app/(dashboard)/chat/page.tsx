@@ -5,8 +5,9 @@ export const metadata = {
   description: "Chat with your AI tutor.",
 };
 
-export default function ChatPage({ searchParams }: { searchParams: { courseId?: string } }) {
-  const courseId = searchParams?.courseId;
+export default async function ChatPage({ searchParams }: { searchParams: Promise<{ courseId?: string }> }) {
+  const resolvedSearchParams = await searchParams;
+  const courseId = resolvedSearchParams?.courseId;
 
   return (
     <div className="flex flex-col h-full max-w-5xl mx-auto p-4 sm:p-6 w-full">

@@ -88,13 +88,12 @@ export default function ChatUI({ courseId, courseName }: { courseId?: string, co
       api: '/api/chat',
       body: {
         courseId,
-      }
+      },
     }),
-    onFinish: ({ message }) => {
-      // Save history after ai responds
-      if (courseId) {
-        saveHistory(courseId, [...messages, message]);
-      }
+    onFinish: (message) => {
+      // Save history after AI responds (works for both course & global chat)
+      const cid = courseId || 'global';
+      saveHistory(cid, [...messages, message]);
     }
   });
 
@@ -118,9 +117,6 @@ export default function ChatUI({ courseId, courseName }: { courseId?: string, co
              currentTranscript += event.results[i][0].transcript;
           }
           setInput(prev => {
-             // For simplicity, just append to input if empty, or replace last chunk.
-             // Standard continuous dictation usually requires more complex state, but we'll keep it simple:
-             // It overwrites input while listening.
              return currentTranscript;
           });
         };
@@ -155,18 +151,10 @@ export default function ChatUI({ courseId, courseName }: { courseId?: string, co
   };
 
   useEffect(() => {
-    if (courseId) {
-      loadHistory(courseId);
-    } else if (messages.length === 0) {
-      setMessages([
-        {
-          id: "1",
-          role: "assistant",
-          parts: [{ type: 'text', text: `Hello! I'm your AI tutor for ${courseName || "this course"}. How can I help you today? \n\nYou can ask me to explain concepts, provide examples, or write code.` }]
-        }
-      ]);
-    }
+    const cid = courseId || 'global';
+    loadHistory(cid);
   }, [courseId]);
+
 
   const loadHistory = async (cid: string) => {
     try {
@@ -200,10 +188,15 @@ export default function ChatUI({ courseId, courseName }: { courseId?: string, co
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           courseId: cid,
-          messages: updatedMessages.map(m => ({
-            role: m.role,
-            content: m.parts?.filter((p: any) => p.type === 'text').map((p: any) => p.text).join('\n') || (m as any).content || '',
-          }))
+          messages: updatedMessages.map(m => {
+            const textContent = Array.isArray(m.parts) 
+              ? m.parts.filter((p: any) => p.type === 'text').map((p: any) => p.text).join('')
+              : (m as any).content || '';
+            return {
+              role: m.role,
+              content: textContent,
+            };
+          })
         })
       });
     } catch (e) {
@@ -235,10 +228,8 @@ export default function ChatUI({ courseId, courseName }: { courseId?: string, co
     
     // Create optimistic user message for saving
     const userMessage = { id: Date.now().toString(), role: "user" as const, parts: [{ type: 'text' as const, text: input }] };
-    if (courseId) {
-       // We save user msg + previous msgs. The assistant response will be saved in onFinish.
-       saveHistory(courseId, [...messages, userMessage]);
-    }
+    const cid = courseId || 'global';
+    saveHistory(cid, [...messages, userMessage]);
 
     sendMessage({ text: input });
     setInput("");
@@ -262,7 +253,9 @@ export default function ChatUI({ courseId, courseName }: { courseId?: string, co
       {/* Chat Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-6">
         {messages.map((msg) => {
-          const textContent = msg.parts?.filter((p: any) => p.type === 'text').map((p: any) => p.text).join('\n') || '';
+          const textContent = Array.isArray(msg.parts)
+            ? msg.parts.filter((p: any) => p.type === 'text').map((p: any) => p.text).join('')
+            : (msg as any).content || '';
           
           return (
             <div key={msg.id} className={`flex gap-4 ${msg.role === "user" ? "flex-row-reverse" : "flex-row"}`}>

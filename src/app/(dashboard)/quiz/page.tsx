@@ -1,5 +1,5 @@
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { authOptions } from '@/lib/auth';
 import connectToDatabase from '@/lib/mongodb';
 import QuizAttempt from '@/models/QuizAttempt';
 import Course from '@/models/Course';

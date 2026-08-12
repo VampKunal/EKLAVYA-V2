@@ -1,11 +1,13 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { authOptions } from '@/lib/auth';
 import Course from '@/models/Course';
+import '@/models/Subject'; // register Subject schema so .populate('subjects') works
 import connectToDatabase from '@/lib/mongodb';
 import { asyncHandler } from '@/utils/asyncHandler';
 
-export const GET = asyncHandler(async (req: Request, { params }: { params: { courseId: string } }) => {
+export const GET = asyncHandler(async (req: Request, props: { params: Promise<{ courseId: string }> }) => {
+  const params = await props.params;
   const session = await getServerSession(authOptions);
 
   if (!session || !session.user?.id) {
@@ -23,7 +25,8 @@ export const GET = asyncHandler(async (req: Request, { params }: { params: { cou
   return NextResponse.json({ course });
 });
 
-export const PUT = asyncHandler(async (req: Request, { params }: { params: { courseId: string } }) => {
+export const PUT = asyncHandler(async (req: Request, props: { params: Promise<{ courseId: string }> }) => {
+  const params = await props.params;
   const session = await getServerSession(authOptions);
 
   if (!session || !session.user?.id) {
@@ -55,7 +58,8 @@ export const PUT = asyncHandler(async (req: Request, { params }: { params: { cou
   return NextResponse.json({ course, message: 'Course updated successfully' });
 });
 
-export const DELETE = asyncHandler(async (req: Request, { params }: { params: { courseId: string } }) => {
+export const DELETE = asyncHandler(async (req: Request, props: { params: Promise<{ courseId: string }> }) => {
+  const params = await props.params;
   const session = await getServerSession(authOptions);
 
   if (!session || !session.user?.id) {
