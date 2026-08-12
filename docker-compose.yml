@@ -1,0 +1,58 @@
+version: '3.8'
+
+services:
+  # Next.js Web Frontend & API Gateway
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.nextjs
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - FASTAPI_AGENT_URL=http://ai-agent:8000
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
+    env_file:
+      - .env.local
+    depends_on:
+      - ai-agent
+      - rabbitmq
+
+  # FastAPI LangGraph Microservice
+  ai-agent:
+    build:
+      context: ./ai-agent-service
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
+    env_file:
+      - ./ai-agent-service/.env
+    depends_on:
+      - rabbitmq
+
+  # RabbitMQ Ingestion Worker Process
+  worker:
+    build:
+      context: ./ai-agent-service
+      dockerfile: Dockerfile
+    command: python worker.py
+    environment:
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
+    env_file:
+      - ./ai-agent-service/.env
+    depends_on:
+      - rabbitmq
+
+  # RabbitMQ Message Broker Instance
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    ports:
+      - "5672:5672"
+      - "15672:15672" # Management Dashboard
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+
+volumes:
+  rabbitmq_data:
