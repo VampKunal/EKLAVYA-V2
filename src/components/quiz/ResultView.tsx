@@ -308,7 +308,7 @@ export function ResultView({ score, timeTaken, questions, topic = 'General Quiz'
                     <div className="flex flex-wrap gap-3 pt-2">
                       <Button
                         size="sm"
-                        variant={rem?.misconception ? "secondary" : "default"}
+                        variant={rem?.misconception ? "outline" : "primary"}
                         onClick={() => handleRemediate(idx, q)}
                         disabled={rem?.loading}
                         className="gap-2 bg-purple-600 hover:bg-purple-700 text-white dark:bg-purple-600 dark:hover:bg-purple-700"
