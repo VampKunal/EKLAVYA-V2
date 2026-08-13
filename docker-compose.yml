@@ -38,7 +38,7 @@ services:
     build:
       context: ./ai-agent-service
       dockerfile: Dockerfile
-    command: python worker.py
+    command: python -u worker.py
     environment:
       - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
     env_file:

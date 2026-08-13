@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 
 export interface IChatHistory extends mongoose.Document {
   userId: mongoose.Types.ObjectId;
-  courseId: mongoose.Types.ObjectId;
+  courseId: string;
   messages: {
     role: 'user' | 'assistant';
     content: string;
@@ -15,7 +15,7 @@ export interface IChatHistory extends mongoose.Document {
 const ChatHistorySchema = new mongoose.Schema<IChatHistory>(
   {
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-    courseId: { type: mongoose.Schema.Types.ObjectId, ref: 'Course', required: true },
+    courseId: { type: String, required: true, index: true },
     messages: [
       {
         role: { type: String, enum: ['user', 'assistant'], required: true },

@@ -9,14 +9,27 @@ from services.rabbitmq import rabbitmq_publisher
 from graphs.crag_graph import crag_app
 from graphs.quiz_remediation_graph import quiz_remediation_app
 from graphs.curriculum_graph import curriculum_app
+from worker import start_worker
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     print("[FastAPI Service] Starting up...")
     await redis_cache.connect()
     await rabbitmq_publisher.connect()
+    
+    # Start background RabbitMQ ingestion worker inside the same process/container
+    # (Enables 100% free deployment on single Web Service providers like Render or Koyeb)
+    worker_task = None
+    try:
+        worker_task = asyncio.create_task(start_worker())
+        print("[FastAPI Service] Background RabbitMQ worker started successfully.")
+    except Exception as e:
+        print(f"[FastAPI Service] Could not start embedded worker: {e}")
+
     yield
     print("[FastAPI Service] Shutting down...")
+    if worker_task:
+        worker_task.cancel()
 
 app = FastAPI(
     title="Eklavya AI — LangGraph Agent Microservice",

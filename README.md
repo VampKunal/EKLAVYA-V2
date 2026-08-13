@@ -9,7 +9,7 @@
 [![RabbitMQ](https://img.shields.io/badge/RabbitMQ-Broker-FF6600?style=flat-square&logo=rabbitmq)](https://www.rabbitmq.com/)
 [![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?style=flat-square&logo=docker)](https://www.docker.com/)
 
-> **Eklavya AI** is a production-grade, microservice-powered learning platform. It combines a Next.js frontend gateway with a dedicated **FastAPI LangGraph Microservice** providing Corrective RAG (CRAG) with web search tools, adaptive quiz misconception loops, Redis multi-tier caching, RabbitMQ asynchronous database ingestion, and full containerization via Docker Compose.
+> **Eklavya AI** is a production-grade, microservice-powered learning platform. It combines a Next.js frontend gateway with a dedicated **FastAPI LangGraph Microservice** providing Corrective RAG (CRAG) with web search tools, adaptive quiz misconception loops, interactive result remediation, Redis multi-tier caching, RabbitMQ asynchronous database ingestion, and full containerization via Docker Compose.
 
 ---
 
@@ -17,7 +17,7 @@
 
 - **🤖 LangGraph Agent Microservice (`/ai-agent-service`)**: Independent FastAPI service running multi-node state graphs for complex agentic workflows.
 - **🔍 Corrective RAG (CRAG)**: Evaluates vector search context relevance; automatically falls back to **Tavily Web Search Tool** when course notes are missing or insufficient.
-- **🔄 Adaptive Quiz Misconception Loop**: Evaluates wrong student answers, identifies specific conceptual misconceptions, generates a 3-bullet micro-lesson, and constructs a live retry question.
+- **🔄 Adaptive Quiz Misconception Loop & ResultView**: Evaluates wrong student answers, identifies specific conceptual misconceptions, generates a 3-bullet micro-lesson, and constructs a live retry question directly inside the attempt view.
 - **🗺️ Autonomous Curriculum Roadmap Agent**: Generates 4-week personalized study plans with self-correction loops to avoid student workload overload.
 - **🚀 RabbitMQ Write-Behind Ingestion Pipeline**: Asynchronously offloads DB persistence (quiz attempt logging, analytics processing) from the main API path to RabbitMQ queues consumed by a background Python worker (`worker.py`).
 - **⚡ Multi-Tier Redis Caching**: Sub-5ms caching for CRAG queries, user context, and dashboard analytics.
@@ -97,7 +97,21 @@ The stack will spin up:
 
 ---
 
+## 🚀 100% Free Production Deployment
+
+You can deploy the complete Eklavya AI stack for **$0/month**:
+
+1. **Next.js Gateway**: Deploy on [Vercel](https://vercel.com) (Hobby Free Plan).
+2. **FastAPI Agent Service + Embedded Ingestion Worker**: Deploy as a single free Web Service on [Render](https://render.com) or [Koyeb](https://koyeb.com). (The RabbitMQ worker runs as an embedded `asyncio` task inside FastAPI startup lifespan).
+3. **MongoDB**: Use [MongoDB Atlas M0 Free Tier](https://www.mongodb.com/cloud/atlas).
+4. **Vector DB**: Use [Qdrant Cloud Free Tier](https://cloud.qdrant.io) (1GB Free).
+5. **Cache**: Use [Upstash Redis](https://upstash.com) (Serverless Free Tier).
+6. **Message Broker**: Use [CloudAMQP](https://www.cloudamqp.com) (Little Lemur Free RabbitMQ).
+
+---
+
 ## 📖 Deep Architecture & Study Guide
 
 For an in-depth technical dive into every page's capabilities, Generative AI algorithms, trade-offs, and microservice mechanics, read:
 👉 [**SYSTEM_ARCHITECTURE_AND_AI_LESSONS.md**](./SYSTEM_ARCHITECTURE_AND_AI_LESSONS.md)
+

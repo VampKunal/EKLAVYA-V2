@@ -17,6 +17,8 @@ export default function QuizTakingPage() {
   const [startTime, setStartTime] = useState<number>(0);
   const [resultData, setResultData] = useState<any>(null);
 
+  const [loadingPastQuiz, setLoadingPastQuiz] = useState(false);
+
   useEffect(() => {
     if (params.quizId === 'new') {
       const stored = sessionStorage.getItem('pendingQuiz');
@@ -31,9 +33,21 @@ export default function QuizTakingPage() {
       } else {
         router.push('/quiz');
       }
-    } else {
-      // MVP: Viewing past quizzes not fully implemented in this view, redirect to dashboard
-      router.push('/quiz');
+    } else if (params.quizId) {
+      setLoadingPastQuiz(true);
+      fetch(`/api/quiz/${params.quizId}`)
+        .then((res) => {
+          if (!res.ok) throw new Error('Quiz not found');
+          return res.json();
+        })
+        .then((data) => {
+          setResultData(data);
+        })
+        .catch((err) => {
+          console.error(err);
+          router.push('/quiz');
+        })
+        .finally(() => setLoadingPastQuiz(false));
     }
   }, [params.quizId, router]);
 

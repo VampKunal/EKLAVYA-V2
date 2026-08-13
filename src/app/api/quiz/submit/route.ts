@@ -130,6 +130,22 @@ export const POST = asyncHandler(async (req: Request) => {
 
   await progress.save();
 
+  // 3. Asynchronously push to FastAPI RabbitMQ Ingestion Queue (non-blocking)
+  const FASTAPI_URL = process.env.FASTAPI_AGENT_URL || 'http://localhost:8000';
+  fetch(`${FASTAPI_URL}/api/v1/queue/quiz-attempt`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      userId: session.user.id,
+      courseId,
+      topic: topic || '',
+      score,
+      questions: gradedQuestions,
+      timeTaken: timeTaken || 0,
+    }),
+  }).catch((err) => {
+    console.warn('[Quiz Submit] FastAPI queue notification warning:', err.message);
+  });
 
   return NextResponse.json({ attempt, progress });
 });
