@@ -51,9 +51,23 @@ async def process_quiz_attempt(message: aio_pika.IncomingMessage, db):
 async def start_worker():
     print("[Worker] Connecting to MongoDB and RabbitMQ...")
     mongo_client = AsyncIOMotorClient(settings.MONGODB_URI)
-    db = mongo_client.get_default_database()
+    try:
+        db = mongo_client.get_default_database()
+    except Exception:
+        db = mongo_client.get_database("eklavya")
     
-    connection = await aio_pika.connect_robust(settings.RABBITMQ_URL)
+    connection = None
+    for attempt in range(10):
+        try:
+            connection = await aio_pika.connect_robust(settings.RABBITMQ_URL)
+            break
+        except Exception as e:
+            print(f"[Worker] Waiting for RabbitMQ connection (attempt {attempt+1}/10)... Error: {e}")
+            await asyncio.sleep(3)
+
+    if not connection:
+        raise ConnectionError("[Worker] Failed to connect to RabbitMQ after 10 attempts.")
+
     channel = await connection.channel()
     
     quiz_queue = await channel.declare_queue("quiz_attempts_queue", durable=True)

@@ -8,15 +8,19 @@ class RabbitMQPublisher:
         self.channel = None
 
     async def connect(self):
-        try:
-            self.connection = await aio_pika.connect_robust(settings.RABBITMQ_URL)
-            self.channel = await self.connection.channel()
-            await self.channel.declare_queue("quiz_attempts_queue", durable=True)
-            await self.channel.declare_queue("analytics_events_queue", durable=True)
-            print("[RabbitMQ] Connected and queues declared successfully")
-        except Exception as e:
-            print(f"[RabbitMQ] Warning: Could not connect to RabbitMQ: {e}")
-            self.connection = None
+        for attempt in range(10):
+            try:
+                self.connection = await aio_pika.connect_robust(settings.RABBITMQ_URL)
+                self.channel = await self.connection.channel()
+                await self.channel.declare_queue("quiz_attempts_queue", durable=True)
+                await self.channel.declare_queue("analytics_events_queue", durable=True)
+                print("[RabbitMQ] Connected and queues declared successfully")
+                return
+            except Exception as e:
+                print(f"[RabbitMQ] Waiting for broker startup (attempt {attempt+1}/10)... Error: {e}")
+                import asyncio
+                await asyncio.sleep(3)
+        self.connection = None
 
     async def publish(self, queue_name: str, payload: dict):
         if not self.channel:

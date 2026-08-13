@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 
 const FASTAPI_URL = process.env.FASTAPI_AGENT_URL || 'http://localhost:8000';
+export const dynamic = 'force-dynamic';
 
 export async function POST(req: Request) {
   try {

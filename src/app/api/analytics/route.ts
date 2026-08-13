@@ -7,6 +7,8 @@ import UserProgress from '@/models/UserProgress';
 import '@/models/Course'; // register schema so populate('courseId') works
 import connectToDatabase from '@/lib/mongodb';
 
+export const dynamic = 'force-dynamic';
+
 export const GET = asyncHandler(async (req: Request) => {
   const session = await getServerSession(authOptions);
   if (!session || !session.user?.id) {
