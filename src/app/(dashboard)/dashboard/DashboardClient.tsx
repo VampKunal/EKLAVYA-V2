@@ -4,8 +4,9 @@ import React, { useEffect, useState } from 'react';
 import { StatCard } from '@/components/dashboard/StatCard';
 import { ProgressChart } from '@/components/dashboard/ProgressChart';
 import { WeakTopics } from '@/components/dashboard/WeakTopics';
-import { Brain, Target, Flame, Loader2, CheckCircle2, XCircle } from 'lucide-react';
+import { Brain, Target, Flame, Loader2, CheckCircle2, XCircle, ArrowRight, Sparkles } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
 import Link from 'next/link';
 
 export function DashboardClient() {
@@ -34,12 +35,12 @@ export function DashboardClient() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="animate-spin text-slate-400" size={32} />
+        <Loader2 className="animate-spin text-orange-500" size={36} />
       </div>
     );
   }
 
-  if (!analytics) return <div>Failed to load analytics data.</div>;
+  if (!analytics) return <div className="p-6 font-mono text-stone-600 bg-orange-50 rounded-xl border border-orange-200">Failed to load analytics data.</div>;
 
   const { overview, progressData, recentAttemptsList, weakTopics } = analytics;
 
@@ -47,18 +48,18 @@ export function DashboardClient() {
     <div className="space-y-6">
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <StatCard title="Total Quizzes" value={overview.totalQuizzes} icon={<Brain size={20} />} />
+        <StatCard title="Total Quizzes" value={overview.totalQuizzes} icon={<Brain size={20} className="text-orange-500" />} />
         <StatCard
           title="Average Score"
           value={`${overview.averageScore}%`}
-          icon={<Target size={20} />}
+          icon={<Target size={20} className="text-orange-500" />}
           trend={overview.averageScore >= 80 ? 'Excellent' : 'Keep practicing'}
           trendPositive={overview.averageScore >= 80}
         />
         <StatCard
           title="Max Streak"
           value={`${overview.streak} Days`}
-          icon={<Flame size={20} className={overview.streak > 0 ? 'text-orange-500' : ''} />}
+          icon={<Flame size={20} className="text-orange-500 fill-orange-500 animate-pulse" />}
         />
       </div>
 
@@ -71,22 +72,24 @@ export function DashboardClient() {
 
           {recommendations.length > 0 && (
             <Card>
-              <CardHeader>
-                <CardTitle>Recommended Action</CardTitle>
+              <CardHeader className="pb-3 border-b border-orange-100">
+                <CardTitle className="flex items-center gap-2 text-stone-900 font-mono font-bold text-lg">
+                  <Sparkles className="w-5 h-5 text-orange-500" />
+                  Recommended Actions
+                </CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="pt-4">
                 <div className="space-y-3">
                   {recommendations.map((rec, idx) => (
-                    <div key={idx} className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-100 dark:border-blue-800 flex justify-between items-start gap-4">
+                    <div key={idx} className="p-3.5 bg-orange-50/60 rounded-xl border border-orange-200/80 flex justify-between items-center gap-3">
                       <div>
-                        <p className="font-semibold text-blue-900 dark:text-blue-100 text-sm">{rec.topic}</p>
-                        <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">{rec.reason}</p>
+                        <p className="font-mono font-bold text-stone-900 text-sm">{rec.topic}</p>
+                        <p className="text-xs text-stone-600 mt-0.5">{rec.reason}</p>
                       </div>
-                      <Link 
-                        href={`/quiz?topic=${encodeURIComponent(rec.topic)}`}
-                        className="text-xs font-medium text-blue-600 bg-blue-100 hover:bg-blue-200 dark:bg-blue-800 dark:text-blue-100 dark:hover:bg-blue-700 px-3 py-1.5 rounded-md whitespace-nowrap transition-colors"
-                      >
-                        Practice
+                      <Link href={`/quiz?topic=${encodeURIComponent(rec.topic)}`}>
+                        <Button size="sm" variant="primary">
+                          Practice
+                        </Button>
                       </Link>
                     </div>
                   ))}
@@ -97,55 +100,55 @@ export function DashboardClient() {
         </div>
       </div>
 
-      {/* Recent Attempts Table — always visible, no topic needed */}
+      {/* Recent Attempts Table */}
       {recentAttemptsList && recentAttemptsList.length > 0 ? (
         <Card>
-          <CardHeader>
+          <CardHeader className="pb-3 border-b border-orange-100">
             <div className="flex items-center justify-between">
-              <CardTitle>Recent Quiz Attempts</CardTitle>
-              <Link href="/analytics" className="text-xs text-blue-500 hover:underline">
-                View full analytics →
+              <CardTitle className="font-mono font-bold text-lg text-stone-900">Recent Quiz Attempts</CardTitle>
+              <Link href="/analytics" className="text-xs font-mono font-bold text-orange-600 hover:text-orange-700 flex items-center gap-1">
+                View full analytics <ArrowRight className="w-3.5 h-3.5" />
               </Link>
             </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-4">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-slate-200 dark:border-slate-700">
-                    <th className="text-left py-2 pr-4 font-medium text-muted-foreground">Course</th>
-                    <th className="text-left py-2 pr-4 font-medium text-muted-foreground">Topic</th>
-                    <th className="text-left py-2 pr-4 font-medium text-muted-foreground">Score</th>
-                    <th className="text-left py-2 pr-4 font-medium text-muted-foreground">Result</th>
-                    <th className="text-left py-2 font-medium text-muted-foreground">Date</th>
+                  <tr className="border-b border-orange-100">
+                    <th className="text-left py-2.5 pr-4 font-mono font-bold text-xs uppercase tracking-wider text-stone-500">Course</th>
+                    <th className="text-left py-2.5 pr-4 font-mono font-bold text-xs uppercase tracking-wider text-stone-500">Topic</th>
+                    <th className="text-left py-2.5 pr-4 font-mono font-bold text-xs uppercase tracking-wider text-stone-500">Score</th>
+                    <th className="text-left py-2.5 pr-4 font-mono font-bold text-xs uppercase tracking-wider text-stone-500">Result</th>
+                    <th className="text-left py-2.5 font-mono font-bold text-xs uppercase tracking-wider text-stone-500">Date</th>
                   </tr>
                 </thead>
                 <tbody>
                   {recentAttemptsList.map((attempt: any) => (
-                    <tr key={attempt.id} className="border-b border-slate-100 dark:border-slate-800 last:border-0">
-                      <td className="py-3 pr-4 font-medium">{attempt.courseName}</td>
-                      <td className="py-3 pr-4 text-muted-foreground">{attempt.topic || '—'}</td>
+                    <tr key={attempt.id} className="border-b border-orange-50 hover:bg-orange-50/30 transition-colors last:border-0">
+                      <td className="py-3 pr-4 font-mono font-bold text-stone-900">{attempt.courseName}</td>
+                      <td className="py-3 pr-4 text-stone-600 font-mono text-xs">{attempt.topic || '—'}</td>
                       <td className="py-3 pr-4">
-                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                          attempt.score >= 80 ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
-                          : attempt.score >= 60 ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
-                          : 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400'
+                        <span className={`text-xs px-2.5 py-1 rounded-full font-mono font-bold border ${
+                          attempt.score >= 80 ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                          : attempt.score >= 60 ? 'bg-amber-50 text-amber-700 border-amber-200'
+                          : 'bg-red-50 text-red-700 border-red-200'
                         }`}>
                           {attempt.score}%
                         </span>
                       </td>
                       <td className="py-3 pr-4">
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
-                            <CheckCircle2 size={12} />{attempt.correctCount}
+                        <div className="flex items-center gap-2 text-xs font-mono font-bold text-stone-600">
+                          <span className="flex items-center gap-1 text-emerald-600">
+                            <CheckCircle2 size={13} />{attempt.correctCount}
                           </span>
-                          <span className="flex items-center gap-1 text-rose-500 dark:text-rose-400">
-                            <XCircle size={12} />{attempt.totalQuestions - attempt.correctCount}
+                          <span className="flex items-center gap-1 text-red-500">
+                            <XCircle size={13} />{attempt.totalQuestions - attempt.correctCount}
                           </span>
-                          <span>/ {attempt.totalQuestions}</span>
+                          <span className="text-stone-400">/ {attempt.totalQuestions}</span>
                         </div>
                       </td>
-                      <td className="py-3 text-muted-foreground text-xs">{attempt.date}</td>
+                      <td className="py-3 text-stone-500 font-mono text-xs">{attempt.date}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -154,13 +157,15 @@ export function DashboardClient() {
           </CardContent>
         </Card>
       ) : (
-        <Card className="bg-slate-50 dark:bg-slate-900/50 border-dashed">
+        <Card className="bg-orange-50/40 border-dashed border-orange-200">
           <CardContent className="flex flex-col items-center justify-center py-10 text-center">
-            <Brain className="w-12 h-12 text-slate-300 mb-4" />
-            <h3 className="text-lg font-medium text-slate-900 dark:text-white mb-2">No Quizzes Taken Yet</h3>
-            <p className="text-sm text-slate-500 max-w-sm mb-6">Start taking quizzes to build your streak and see your analytics.</p>
-            <Link href="/quiz" className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg text-sm font-medium transition-colors">
-              Take Your First Quiz
+            <Brain className="w-12 h-12 text-orange-400 mb-3" />
+            <h3 className="text-lg font-mono font-bold text-stone-900 mb-1">No Quizzes Taken Yet</h3>
+            <p className="text-sm text-stone-600 max-w-sm mb-5">Start taking quizzes to build your streak and see your analytics.</p>
+            <Link href="/quiz">
+              <Button variant="primary">
+                Take Your First Quiz
+              </Button>
             </Link>
           </CardContent>
         </Card>

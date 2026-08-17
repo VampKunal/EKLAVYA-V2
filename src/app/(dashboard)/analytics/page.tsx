@@ -12,10 +12,10 @@ export default async function AnalyticsPage() {
 
   return (
     <div className="max-w-6xl mx-auto py-6">
-      <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+      <h1 className="text-3xl font-mono font-bold text-stone-900 tracking-tight mb-2">
         Detailed Analytics
       </h1>
-      <p className="text-gray-600 dark:text-gray-400 mb-8">
+      <p className="text-stone-600 font-mono text-sm mb-8">
         Deep dive into your performance and knowledge retention.
       </p>
 

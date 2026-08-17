@@ -112,117 +112,117 @@ export default function Profile() {
 
   if (status === "loading" || isLoading) {
     return (
-        <div className="flex items-center justify-center h-full">
-          <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
-        </div>
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="w-8 h-8 text-orange-500 animate-spin" />
+      </div>
     );
   }
 
   return (
-      <div className="max-w-3xl mx-auto pb-12">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-          Your Profile
-        </h1>
-        <p className="text-gray-600 dark:text-gray-400 mb-8">
-          Manage your personal information and learning preferences.
-        </p>
+    <div className="max-w-3xl mx-auto py-6 pb-12">
+      <h1 className="text-3xl font-mono font-bold text-stone-900 tracking-tight mb-2">
+        Your Profile
+      </h1>
+      <p className="text-stone-600 font-mono text-sm mb-8">
+        Manage your personal information and learning preferences.
+      </p>
 
-        {message.text && (
-          <div className={`p-4 rounded-lg mb-6 ${message.type === 'success' ? 'bg-green-50 text-green-800 border border-green-200' : 'bg-red-50 text-red-800 border border-red-200'}`}>
-            {message.text}
-          </div>
-        )}
-
-        <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-6 md:p-8">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            
-            {/* Profile Picture section */}
-            <div className="flex flex-col sm:flex-row gap-6 items-start sm:items-center">
-              <div className="w-24 h-24 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-600 dark:text-blue-400 font-bold overflow-hidden border-2 border-white dark:border-gray-800 shadow-sm shrink-0 relative group">
-                {formData.profilePicture ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={formData.profilePicture} alt="Profile" className="w-full h-full object-cover" />
-                ) : (
-                  <span className="text-3xl">{formData.name ? formData.name.charAt(0).toUpperCase() : 'U'}</span>
-                )}
-              </div>
-              <div className="flex-1 w-full space-y-2">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Profile Picture URL</label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <ImageIcon className="h-5 w-5 text-gray-400" />
-                  </div>
-                  <input
-                    type="url"
-                    name="profilePicture"
-                    value={formData.profilePicture}
-                    onChange={handleInputChange}
-                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white sm:text-sm"
-                    placeholder="https://example.com/avatar.jpg"
-                  />
-                </div>
-                <p className="text-xs text-gray-500">Provide a URL for your avatar image.</p>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Full Name</label>
-              <input
-                type="text"
-                name="name"
-                required
-                value={formData.name}
-                onChange={handleInputChange}
-                className="block w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white sm:text-sm"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Bio</label>
-              <textarea
-                name="bio"
-                rows={3}
-                value={formData.bio}
-                onChange={handleInputChange}
-                className="block w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white sm:text-sm"
-                placeholder="Tell us a bit about yourself..."
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Learning Goal</label>
-              <textarea
-                name="learningGoal"
-                rows={2}
-                value={formData.learningGoal}
-                onChange={handleInputChange}
-                className="block w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white sm:text-sm"
-                placeholder="What do you want to achieve?"
-              />
-            </div>
-
-            <div className="pt-4 flex items-center justify-between border-t border-gray-200 dark:border-gray-800">
-              <button
-                type="button"
-                onClick={handleDeleteAccount}
-                disabled={isDeleting}
-                className="flex items-center gap-2 px-4 py-2 border border-red-300 dark:border-red-900 text-red-700 dark:text-red-400 rounded-md shadow-sm hover:bg-red-50 dark:hover:bg-red-900/30 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors disabled:opacity-50"
-              >
-                {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-                Delete Account
-              </button>
-              
-              <button
-                type="submit"
-                disabled={isSaving}
-                className="flex items-center gap-2 px-6 py-2 border border-transparent text-white bg-blue-600 rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors disabled:opacity-50"
-              >
-                {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                Save Changes
-              </button>
-            </div>
-          </form>
+      {message.text && (
+        <div className={`p-4 rounded-xl mb-6 font-mono text-sm ${message.type === 'success' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-rose-50 text-rose-800 border border-rose-200'}`}>
+          {message.text}
         </div>
+      )}
+
+      <div className="bg-white/80 backdrop-blur-md rounded-2xl shadow-xl shadow-orange-500/5 border border-orange-200/80 p-6 md:p-8">
+        <form onSubmit={handleSubmit} className="space-y-6">
+          
+          {/* Profile Picture section */}
+          <div className="flex flex-col sm:flex-row gap-6 items-start sm:items-center">
+            <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center text-white font-mono font-bold overflow-hidden border-2 border-white shadow-md shrink-0 relative group">
+              {formData.profilePicture ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={formData.profilePicture} alt="Profile" className="w-full h-full object-cover" />
+              ) : (
+                <span className="text-3xl">{formData.name ? formData.name.charAt(0).toUpperCase() : 'U'}</span>
+              )}
+            </div>
+            <div className="flex-1 w-full space-y-1.5">
+              <label className="block text-xs font-mono font-bold uppercase tracking-wider text-stone-700">Profile Picture URL</label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <ImageIcon className="h-4 w-4 text-orange-400" />
+                </div>
+                <input
+                  type="url"
+                  name="profilePicture"
+                  value={formData.profilePicture}
+                  onChange={handleInputChange}
+                  className="block w-full pl-10 pr-3 py-2.5 border border-orange-200 rounded-xl bg-stone-50/50 text-stone-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 font-mono text-sm placeholder:text-stone-400 placeholder:text-xs"
+                  placeholder="https://example.com/avatar.jpg"
+                />
+              </div>
+              <p className="text-xs font-mono text-stone-400">Provide a direct URL for your avatar image.</p>
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="block text-xs font-mono font-bold uppercase tracking-wider text-stone-700">Full Name</label>
+            <input
+              type="text"
+              name="name"
+              required
+              value={formData.name}
+              onChange={handleInputChange}
+              className="block w-full px-3.5 py-2.5 border border-orange-200 rounded-xl bg-stone-50/50 text-stone-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 font-mono text-sm"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="block text-xs font-mono font-bold uppercase tracking-wider text-stone-700">Bio</label>
+            <textarea
+              name="bio"
+              rows={3}
+              value={formData.bio}
+              onChange={handleInputChange}
+              className="block w-full px-3.5 py-2.5 border border-orange-200 rounded-xl bg-stone-50/50 text-stone-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 font-mono text-sm placeholder:text-stone-400 placeholder:text-xs resize-none"
+              placeholder="Tell us a bit about yourself..."
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="block text-xs font-mono font-bold uppercase tracking-wider text-stone-700">Learning Goal</label>
+            <textarea
+              name="learningGoal"
+              rows={2}
+              value={formData.learningGoal}
+              onChange={handleInputChange}
+              className="block w-full px-3.5 py-2.5 border border-orange-200 rounded-xl bg-stone-50/50 text-stone-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 font-mono text-sm placeholder:text-stone-400 placeholder:text-xs resize-none"
+              placeholder="What do you want to achieve?"
+            />
+          </div>
+
+          <div className="pt-4 flex items-center justify-between border-t border-orange-100">
+            <button
+              type="button"
+              onClick={handleDeleteAccount}
+              disabled={isDeleting}
+              className="flex items-center gap-2 px-4 py-2.5 border border-rose-200 text-rose-600 rounded-xl font-mono font-bold text-sm hover:bg-rose-50 transition-colors disabled:opacity-50"
+            >
+              {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+              Delete Account
+            </button>
+            
+            <button
+              type="submit"
+              disabled={isSaving}
+              className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white rounded-xl font-mono font-bold text-sm shadow-md hover:shadow-orange-500/20 transition-all disabled:opacity-50"
+            >
+              {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+              Save Changes
+            </button>
+          </div>
+        </form>
       </div>
+    </div>
   );
 }

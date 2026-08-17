@@ -74,21 +74,24 @@ export function QuizDashboardClient({ courses }: { courses: any[] }) {
 
   return (
     <>
-      <Button onClick={() => setIsOpen(true)} className="gap-2">
+      <Button 
+        onClick={() => setIsOpen(true)} 
+        className="gap-2 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-mono font-bold rounded-xl shadow-md hover:shadow-orange-500/20 border-0"
+      >
         <Plus size={16} />
         Generate Quiz
       </Button>
 
       {isOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-lg p-6 w-full max-w-md shadow-xl relative">
-            <h2 className="text-xl font-bold mb-4">Generate New Quiz</h2>
+        <div className="fixed inset-0 bg-stone-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white/95 dark:bg-stone-900/95 backdrop-blur-md rounded-2xl p-6 w-full max-w-md shadow-2xl border border-orange-200 dark:border-stone-700 relative">
+            <h2 className="text-xl font-mono font-bold mb-4 text-stone-900 dark:text-white">Generate New Quiz</h2>
             
             <form onSubmit={handleGenerate} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-1">Select Course Context</label>
+                <label className="block text-xs font-mono font-bold uppercase tracking-wider text-stone-700 dark:text-stone-300 mb-1.5">Select Course Context</label>
                 <select 
-                  className="w-full p-2 rounded-md border dark:bg-slate-800 dark:border-slate-700"
+                  className="w-full p-2.5 rounded-xl border border-orange-200 dark:border-stone-700 bg-white dark:bg-stone-800 text-stone-900 dark:text-white font-mono text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
                   value={selectedCourse}
                   onChange={(e) => setSelectedCourse(e.target.value)}
                   disabled={isLoading}
@@ -100,24 +103,24 @@ export function QuizDashboardClient({ courses }: { courses: any[] }) {
                     </option>
                   ))}
                 </select>
-                <p className="text-xs text-muted-foreground mt-1">
+                <p className="text-xs font-mono text-stone-500 dark:text-stone-400 mt-1">
                   The AI will use uploaded materials from this course to generate questions.
                 </p>
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1">Specific Topic</label>
+                <label className="block text-xs font-mono font-bold uppercase tracking-wider text-stone-700 dark:text-stone-300 mb-1.5">Specific Topic</label>
                 <input 
                   type="text" 
                   placeholder="e.g., React Hooks, Thermodynamics"
-                  className="w-full p-2 rounded-md border dark:bg-slate-800 dark:border-slate-700"
+                  className="w-full p-2.5 rounded-xl border border-orange-200 dark:border-stone-700 bg-white dark:bg-stone-800 text-stone-900 dark:text-white placeholder-stone-400 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
                   value={topic}
                   onChange={(e) => setTopic(e.target.value)}
                   disabled={isLoading}
                 />
               </div>
 
-              {error && <p className="text-sm text-red-500">{error}</p>}
+              {error && <p className="text-sm font-mono text-red-500 border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/30 p-2.5 rounded-xl">{error}</p>}
 
               <div className="flex justify-end gap-3 mt-6">
                 <Button 
@@ -125,10 +128,15 @@ export function QuizDashboardClient({ courses }: { courses: any[] }) {
                   variant="outline" 
                   onClick={() => setIsOpen(false)}
                   disabled={isLoading}
+                  className="rounded-xl font-mono border-stone-200 dark:border-stone-700"
                 >
                   Cancel
                 </Button>
-                <Button type="submit" disabled={isLoading}>
+                <Button 
+                  type="submit" 
+                  disabled={isLoading}
+                  className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-mono font-bold rounded-xl shadow-md border-0"
+                >
                   {isLoading ? (
                     <>
                       <Loader2 size={16} className="animate-spin mr-2" />

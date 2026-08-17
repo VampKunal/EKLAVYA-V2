@@ -7,7 +7,7 @@ export default function AuthenticatedLayout({ children }: { children: React.Reac
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="flex h-screen bg-gray-50 dark:bg-gray-950 overflow-hidden">
+    <div className="flex h-screen bg-gradient-to-br from-orange-50/50 via-white to-amber-50/30 text-stone-900 overflow-hidden">
       <Sidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
       
       <div className="flex flex-col flex-1 overflow-hidden">

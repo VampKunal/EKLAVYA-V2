@@ -11,11 +11,11 @@ type Tab = 'overview' | 'course' | 'topic';
 
 function AccuracyBadge({ accuracy }: { accuracy: number }) {
   const color =
-    accuracy >= 80 ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
-    : accuracy >= 60 ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
-    : 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400';
+    accuracy >= 80 ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+    : accuracy >= 60 ? 'bg-amber-50 text-amber-700 border-amber-200'
+    : 'bg-red-50 text-red-700 border-red-200';
   return (
-    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${color}`}>
+    <span className={`text-xs px-2.5 py-1 rounded-full font-mono font-bold border ${color}`}>
       {accuracy}%
     </span>
   );
@@ -24,7 +24,7 @@ function AccuracyBadge({ accuracy }: { accuracy: number }) {
 function StatusIcon({ status }: { status: string }) {
   if (status === 'Mastered') return <CheckCircle2 size={14} className="text-emerald-500" />;
   if (status === 'Needs Refresh') return <RotateCw size={14} className="text-amber-500" />;
-  return <AlertTriangle size={14} className="text-rose-500" />;
+  return <AlertTriangle size={14} className="text-red-500" />;
 }
 
 function CourseCard({ course }: { course: any }) {
@@ -32,35 +32,37 @@ function CourseCard({ course }: { course: any }) {
 
   return (
     <Card>
-      <CardHeader className="pb-2 cursor-pointer" onClick={() => setExpanded(!expanded)}>
+      <CardHeader className="pb-3 cursor-pointer select-none" onClick={() => setExpanded(!expanded)}>
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <BookOpen size={18} className="text-blue-500" />
-            <CardTitle className="text-base">{course.courseName}</CardTitle>
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 rounded-xl bg-orange-50 text-orange-500 border border-orange-100">
+              <BookOpen size={18} />
+            </div>
+            <CardTitle className="text-base font-mono font-bold text-stone-900">{course.courseName}</CardTitle>
           </div>
           <div className="flex items-center gap-3">
             <AccuracyBadge accuracy={course.averageScore} />
-            <span className="text-xs text-muted-foreground">{course.totalQuizzes} quiz{course.totalQuizzes !== 1 ? 'zes' : ''}</span>
-            {expanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+            <span className="text-xs font-mono text-stone-500">{course.totalQuizzes} quiz{course.totalQuizzes !== 1 ? 'zes' : ''}</span>
+            {expanded ? <ChevronDown size={18} className="text-stone-400" /> : <ChevronRight size={18} className="text-stone-400" />}
           </div>
         </div>
       </CardHeader>
 
       {expanded && (
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-4 pt-2 border-t border-orange-100">
           {/* Individual attempt history */}
           <div>
-            <p className="text-xs text-muted-foreground uppercase tracking-wide mb-2 font-medium">Attempt History</p>
+            <p className="text-xs font-mono font-bold uppercase tracking-wider text-stone-500 mb-2">Attempt History</p>
             <div className="space-y-1.5">
               {course.recentAttempts.map((a: any, i: number) => (
-                <div key={i} className="flex items-center justify-between text-sm py-1.5 border-b border-slate-100 dark:border-slate-800 last:border-0">
-                  <div className="flex items-center gap-2 text-muted-foreground text-xs">
+                <div key={i} className="flex items-center justify-between text-sm py-2 border-b border-orange-50 last:border-0">
+                  <div className="flex items-center gap-2 text-stone-600 font-mono text-xs">
                     <span>{a.date}</span>
-                    {a.topic && <span className="bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">{a.topic}</span>}
+                    {a.topic && <span className="bg-orange-100/60 text-orange-800 px-2 py-0.5 rounded-md font-bold">{a.topic}</span>}
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400">
-                      <CheckCircle2 size={11} />{a.correct}/{a.total}
+                    <span className="flex items-center gap-1 text-xs font-mono font-bold text-emerald-600">
+                      <CheckCircle2 size={13} />{a.correct}/{a.total}
                     </span>
                     <AccuracyBadge accuracy={a.score} />
                   </div>
@@ -69,20 +71,20 @@ function CourseCard({ course }: { course: any }) {
             </div>
           </div>
 
-          {/* Topic breakdown (only if topics exist) */}
+          {/* Topic breakdown */}
           {course.topicsBreakdown.length > 0 && (
             <div>
-              <p className="text-xs text-muted-foreground uppercase tracking-wide mb-2 font-medium">By Topic</p>
+              <p className="text-xs font-mono font-bold uppercase tracking-wider text-stone-500 mb-2">By Topic</p>
               <div className="space-y-1.5">
                 {course.topicsBreakdown.map((t: any, i: number) => (
-                  <div key={i} className="flex items-center justify-between text-sm py-1.5 border-b border-slate-100 dark:border-slate-800 last:border-0">
-                    <div className="flex items-center gap-2">
+                  <div key={i} className="flex items-center justify-between text-sm py-2 border-b border-orange-50 last:border-0">
+                    <div className="flex items-center gap-2 font-mono font-bold text-stone-800">
                       <StatusIcon status={t.status} />
                       <span>{t.topic}</span>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-3">
                       <AccuracyBadge accuracy={t.accuracy} />
-                      <span className="text-xs text-muted-foreground w-16 text-right">
+                      <span className="text-xs font-mono text-stone-500 w-16 text-right">
                         {t.daysSince === 0 ? 'Today' : `${t.daysSince}d ago`}
                       </span>
                     </div>
@@ -97,12 +99,11 @@ function CourseCard({ course }: { course: any }) {
   );
 }
 
-
 function TopicTable({ topics }: { topics: any[] }) {
   if (topics.length === 0) {
     return (
       <Card>
-        <CardContent className="py-10 text-center text-muted-foreground text-sm">
+        <CardContent className="py-10 text-center text-stone-500 font-mono text-sm">
           Take some quizzes with a topic to see your topic-level analytics.
         </CardContent>
       </Card>
@@ -111,37 +112,37 @@ function TopicTable({ topics }: { topics: any[] }) {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Tag size={18} className="text-purple-500" />
+      <CardHeader className="border-b border-orange-100 pb-3">
+        <CardTitle className="flex items-center gap-2 font-mono font-bold text-stone-900">
+          <Tag size={18} className="text-orange-500" />
           All Topics
         </CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="pt-4">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-slate-200 dark:border-slate-700">
-                <th className="text-left py-2 pr-4 font-medium text-muted-foreground">Topic</th>
-                <th className="text-left py-2 pr-4 font-medium text-muted-foreground">Course</th>
-                <th className="text-left py-2 pr-4 font-medium text-muted-foreground">Accuracy</th>
-                <th className="text-left py-2 pr-4 font-medium text-muted-foreground">Status</th>
-                <th className="text-left py-2 font-medium text-muted-foreground">Last Practiced</th>
+              <tr className="border-b border-orange-100">
+                <th className="text-left py-2.5 pr-4 font-mono font-bold text-xs uppercase tracking-wider text-stone-500">Topic</th>
+                <th className="text-left py-2.5 pr-4 font-mono font-bold text-xs uppercase tracking-wider text-stone-500">Course</th>
+                <th className="text-left py-2.5 pr-4 font-mono font-bold text-xs uppercase tracking-wider text-stone-500">Accuracy</th>
+                <th className="text-left py-2.5 pr-4 font-mono font-bold text-xs uppercase tracking-wider text-stone-500">Status</th>
+                <th className="text-left py-2.5 font-mono font-bold text-xs uppercase tracking-wider text-stone-500">Last Practiced</th>
               </tr>
             </thead>
             <tbody>
               {topics.map((t, i) => (
-                <tr key={i} className="border-b border-slate-100 dark:border-slate-800 last:border-0">
-                  <td className="py-3 pr-4 font-medium">{t.topic}</td>
-                  <td className="py-3 pr-4 text-muted-foreground">{t.courseName}</td>
+                <tr key={i} className="border-b border-orange-50 hover:bg-orange-50/30 transition-colors last:border-0">
+                  <td className="py-3 pr-4 font-mono font-bold text-stone-900">{t.topic}</td>
+                  <td className="py-3 pr-4 text-stone-600 font-mono text-xs">{t.courseName}</td>
                   <td className="py-3 pr-4"><AccuracyBadge accuracy={t.accuracy} /></td>
                   <td className="py-3 pr-4">
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1.5 font-mono text-xs font-bold text-stone-700">
                       <StatusIcon status={t.status} />
-                      <span className="text-xs">{t.status}</span>
+                      <span>{t.status}</span>
                     </div>
                   </td>
-                  <td className="py-3 text-muted-foreground text-xs">
+                  <td className="py-3 text-stone-500 font-mono text-xs">
                     {t.daysSince === 0 ? 'Today' : `${t.daysSince}d ago`}
                   </td>
                 </tr>
@@ -176,12 +177,12 @@ export function AnalyticsClient() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="animate-spin text-slate-400" size={32} />
+        <Loader2 className="animate-spin text-orange-500" size={36} />
       </div>
     );
   }
 
-  if (!analytics) return <div>Failed to load analytics data.</div>;
+  if (!analytics) return <div className="p-6 font-mono text-stone-600 bg-orange-50 rounded-xl border border-orange-200">Failed to load analytics data.</div>;
 
   const tabs: { key: Tab; label: string }[] = [
     { key: 'overview', label: 'Overview' },
@@ -192,15 +193,15 @@ export function AnalyticsClient() {
   return (
     <div className="space-y-6">
       {/* Tab Bar */}
-      <div className="flex gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-lg w-fit">
+      <div className="flex gap-1.5 bg-orange-100/60 p-1.5 rounded-xl border border-orange-200/60 w-fit">
         {tabs.map(t => (
           <button
             key={t.key}
             onClick={() => setTab(t.key)}
-            className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${
+            className={`px-5 py-2 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer ${
               tab === t.key
-                ? 'bg-white dark:bg-slate-700 shadow text-foreground'
-                : 'text-muted-foreground hover:text-foreground'
+                ? 'bg-white text-orange-600 shadow-md shadow-orange-500/10 border border-orange-200/80'
+                : 'text-stone-600 hover:text-orange-600 hover:bg-orange-50/50'
             }`}
           >
             {t.label}
@@ -224,7 +225,7 @@ export function AnalyticsClient() {
         <div className="space-y-4">
           {analytics.byCourse.length === 0 ? (
             <Card>
-              <CardContent className="py-10 text-center text-muted-foreground text-sm">
+              <CardContent className="py-10 text-center text-stone-500 font-mono text-sm">
                 No quiz data found. Take a quiz to see your course breakdown.
               </CardContent>
             </Card>

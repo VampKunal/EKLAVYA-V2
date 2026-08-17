@@ -49,6 +49,7 @@ app.add_middleware(
 class CRAGRequest(BaseModel):
     question: str
     courseId: Optional[str] = ""
+    chatHistory: Optional[List[Dict[str, Any]]] = []
 
 class QuizRemediationRequest(BaseModel):
     topic: str
@@ -85,10 +86,12 @@ async def run_crag_agent(req: CRAGRequest):
     initial_state = {
         "question": req.question,
         "course_id": req.courseId,
+        "chat_history": req.chatHistory or [],
         "documents": [],
         "is_relevant": False,
         "web_search_needed": False,
-        "final_answer": ""
+        "final_answer": "",
+        "hallucination_score": ""
     }
     
     try:
@@ -96,7 +99,8 @@ async def run_crag_agent(req: CRAGRequest):
         response_payload = {
             "answer": final_state.get("final_answer", ""),
             "webSearchUsed": final_state.get("web_search_needed", False),
-            "documentsUsed": len(final_state.get("documents", []))
+            "documentsUsed": len(final_state.get("documents", [])),
+            "hallucinationScore": final_state.get("hallucination_score", "PASSED")
         }
         await redis_cache.set(cache_key, response_payload, ttl=1800)
         return response_payload

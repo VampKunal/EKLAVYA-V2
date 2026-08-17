@@ -12,8 +12,8 @@ export default async function ChatPage({ searchParams }: { searchParams: Promise
   return (
     <div className="flex flex-col h-full max-w-5xl mx-auto p-4 sm:p-6 w-full">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">AI Tutor</h1>
-        <p className="text-gray-600 dark:text-gray-400">Ask questions, get explanations, and solve doubts.</p>
+        <h1 className="text-2xl font-mono font-bold text-stone-900 tracking-tight">AI Tutor</h1>
+        <p className="text-stone-600 font-mono text-sm">Ask questions, get explanations, and solve doubts.</p>
       </div>
       <ChatUI courseId={courseId} />
     </div>

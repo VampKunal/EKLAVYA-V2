@@ -99,7 +99,7 @@ export default function CourseDetailPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <Loader2 className="h-10 w-10 animate-spin text-blue-500" />
+        <Loader2 className="h-10 w-10 animate-spin text-orange-500" />
       </div>
     );
   }
@@ -107,10 +107,10 @@ export default function CourseDetailPage() {
   if (error || !course) {
     return (
       <div className="max-w-2xl mx-auto mt-20 text-center">
-        <div className="p-4 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 rounded-xl mb-6">
+        <div className="p-4 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 rounded-xl font-mono text-sm mb-6">
           {error || "Course not found"}
         </div>
-        <Link href="/courses" className="inline-flex items-center gap-2 text-blue-600 hover:underline">
+        <Link href="/courses" className="inline-flex items-center gap-2 text-orange-600 dark:text-orange-400 font-mono font-bold hover:underline">
           <ChevronLeft className="w-4 h-4" /> Back to Courses
         </Link>
       </div>
@@ -125,7 +125,7 @@ export default function CourseDetailPage() {
       <div className="mb-6">
         <Link
           href="/courses"
-          className="inline-flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+          className="inline-flex items-center gap-1.5 text-sm font-mono text-stone-500 dark:text-stone-400 hover:text-orange-600 dark:hover:text-orange-400 transition-colors"
         >
           <ChevronLeft className="w-4 h-4" />
           Back to Courses
@@ -133,28 +133,30 @@ export default function CourseDetailPage() {
       </div>
 
       {/* Course Header */}
-      <div className="flex flex-col md:flex-row gap-6 mb-8">
-        <div className="w-full md:w-64 h-40 rounded-2xl bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-900/40 dark:to-indigo-900/40 flex items-center justify-center shrink-0 overflow-hidden">
+      <div className="flex flex-col md:flex-row gap-6 mb-8 bg-white/80 dark:bg-stone-900/80 backdrop-blur-md p-6 rounded-2xl border border-orange-100 dark:border-stone-800 shadow-sm">
+        <div className="w-full md:w-64 h-44 rounded-2xl bg-gradient-to-br from-orange-100/80 via-amber-50 to-orange-50 dark:from-orange-950/40 dark:to-stone-900 flex items-center justify-center shrink-0 overflow-hidden border border-orange-100 dark:border-stone-800">
           {course.thumbnail ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={course.thumbnail} alt={course.title} className="w-full h-full object-cover" />
           ) : (
-            <BookOpen className="w-16 h-16 text-blue-400 opacity-60" />
+            <BookOpen className="w-16 h-16 text-orange-500 opacity-60" />
           )}
         </div>
 
-        <div className="flex-1">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">{course.title}</h1>
-              <p className="text-gray-600 dark:text-gray-400 leading-relaxed max-w-xl">{course.description}</p>
+        <div className="flex-1 flex flex-col justify-between">
+          <div>
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div>
+                <h1 className="text-3xl font-mono font-bold text-stone-900 dark:text-white mb-2">{course.title}</h1>
+                <p className="text-stone-600 dark:text-stone-400 leading-relaxed max-w-xl text-sm">{course.description}</p>
+              </div>
+              <span className={`px-3 py-1 rounded-full text-xs font-mono font-bold uppercase tracking-wider shrink-0 border ${course.isPublic ? "bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950/40 dark:text-orange-400 dark:border-orange-900/50" : "bg-stone-100 text-stone-600 border-stone-200 dark:bg-stone-800 dark:text-stone-400 dark:border-stone-700"}`}>
+                {course.isPublic ? "Public" : "Private"}
+              </span>
             </div>
-            <span className={`px-3 py-1 rounded-full text-xs font-semibold shrink-0 ${course.isPublic ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400" : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"}`}>
-              {course.isPublic ? "Public" : "Private"}
-            </span>
           </div>
-          <div className="mt-4 flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
-            <span className="flex items-center gap-1.5">
+          <div className="mt-4 flex items-center gap-4 text-xs font-mono font-semibold text-stone-500 dark:text-stone-400 pt-3 border-t border-stone-100 dark:border-stone-800">
+            <span className="flex items-center gap-1.5 text-orange-600 dark:text-orange-400">
               <BookOpen className="w-4 h-4" />
               {subjects.length} {subjects.length === 1 ? "Module" : "Modules"}
             </span>
@@ -163,13 +165,13 @@ export default function CourseDetailPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 mb-6 p-1 bg-gray-100 dark:bg-gray-800 rounded-xl w-fit">
+      <div className="flex gap-1 mb-6 p-1.5 bg-orange-50/60 dark:bg-stone-900/60 backdrop-blur border border-orange-100 dark:border-stone-800 rounded-2xl w-fit">
         <button
           onClick={() => setActiveTab("modules")}
-          className={`flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-medium transition-all ${
+          className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-mono font-bold transition-all ${
             activeTab === "modules"
-              ? "bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm"
-              : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+              ? "bg-white dark:bg-stone-800 text-orange-600 dark:text-orange-400 shadow-sm border border-orange-100 dark:border-stone-700"
+              : "text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-200"
           }`}
         >
           <GripVertical className="w-4 h-4" />
@@ -177,10 +179,10 @@ export default function CourseDetailPage() {
         </button>
         <button
           onClick={() => setActiveTab("chat")}
-          className={`flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-medium transition-all ${
+          className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-mono font-bold transition-all ${
             activeTab === "chat"
-              ? "bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm"
-              : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+              ? "bg-white dark:bg-stone-800 text-orange-600 dark:text-orange-400 shadow-sm border border-orange-100 dark:border-stone-700"
+              : "text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-200"
           }`}
         >
           <MessageSquare className="w-4 h-4" />
@@ -192,10 +194,10 @@ export default function CourseDetailPage() {
       {activeTab === "modules" ? (
         <div>
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Course Modules</h2>
+            <h2 className="text-xl font-mono font-bold text-stone-900 dark:text-white">Course Modules</h2>
             <button
               onClick={() => { setShowAddSubject(true); setAddSubjectError(null); }}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white rounded-xl font-mono font-bold text-sm shadow-md hover:shadow-orange-500/20 transition-all"
             >
               <Plus className="w-4 h-4" />
               Add Module
@@ -203,13 +205,13 @@ export default function CourseDetailPage() {
           </div>
 
           {subjects.length === 0 ? (
-            <div className="text-center py-16 bg-white dark:bg-gray-900 rounded-2xl border border-dashed border-gray-300 dark:border-gray-700">
-              <BookOpen className="h-12 w-12 text-gray-300 dark:text-gray-700 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-700 dark:text-gray-300 mb-2">No modules yet</h3>
-              <p className="text-gray-500 dark:text-gray-500 mb-6 text-sm">Add your first module to get started.</p>
+            <div className="text-center py-16 bg-white/80 dark:bg-stone-900/80 backdrop-blur-md rounded-2xl border border-dashed border-orange-200 dark:border-stone-800">
+              <BookOpen className="h-12 w-12 text-orange-300 dark:text-stone-700 mx-auto mb-4" />
+              <h3 className="text-lg font-mono font-bold text-stone-700 dark:text-stone-300 mb-2">No modules yet</h3>
+              <p className="text-stone-500 dark:text-stone-400 font-mono mb-6 text-sm">Add your first module to get started.</p>
               <button
                 onClick={() => { setShowAddSubject(true); setAddSubjectError(null); }}
-                className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium text-sm transition-colors"
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white rounded-xl font-mono font-bold text-sm shadow-md hover:shadow-orange-500/20 transition-all"
               >
                 <Plus className="w-4 h-4" />
                 Add First Module
@@ -220,21 +222,21 @@ export default function CourseDetailPage() {
               {subjects.map((subject, idx) => (
                 <div
                   key={subject._id}
-                  className="flex items-center gap-4 p-5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl hover:border-blue-300 dark:hover:border-blue-700 transition-all group"
+                  className="flex items-center gap-4 p-5 bg-white/80 dark:bg-stone-900/80 backdrop-blur-md border border-orange-100 dark:border-stone-800 rounded-2xl hover:border-orange-300 dark:hover:border-orange-700/50 shadow-sm transition-all group"
                 >
-                  <span className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 text-sm font-bold flex items-center justify-center shrink-0">
+                  <span className="w-8 h-8 rounded-xl bg-orange-100 dark:bg-orange-950/50 text-orange-600 dark:text-orange-400 font-mono text-sm font-bold flex items-center justify-center shrink-0 border border-orange-200 dark:border-orange-900/50">
                     {idx + 1}
                   </span>
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-gray-900 dark:text-white truncate">{subject.name}</h3>
+                    <h3 className="font-mono font-bold text-stone-900 dark:text-white truncate">{subject.name}</h3>
                     {subject.description && (
-                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-1">{subject.description}</p>
+                      <p className="text-sm text-stone-500 dark:text-stone-400 mt-0.5 line-clamp-1">{subject.description}</p>
                     )}
                   </div>
                   <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button
                       onClick={() => handleDeleteSubject(subject._id)}
-                      className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                      className="p-2 text-stone-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors"
                       title="Delete module"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -253,23 +255,23 @@ export default function CourseDetailPage() {
 
       {/* Add Subject Modal */}
       {showAddSubject && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
-          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-md border border-gray-200 dark:border-gray-700">
-            <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white">Add Module</h2>
-              <button onClick={() => setShowAddSubject(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/60 backdrop-blur-sm px-4">
+          <div className="bg-white/95 dark:bg-stone-900/95 backdrop-blur-md rounded-2xl shadow-2xl w-full max-w-md border border-orange-200 dark:border-stone-700 overflow-hidden">
+            <div className="flex items-center justify-between p-6 border-b border-orange-100 dark:border-stone-800 bg-orange-50/30 dark:bg-stone-900/30">
+              <h2 className="text-xl font-mono font-bold text-stone-900 dark:text-white">Add Module</h2>
+              <button onClick={() => setShowAddSubject(false)} className="text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 p-1 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800">
                 <X className="w-5 h-5" />
               </button>
             </div>
             <form onSubmit={handleAddSubject} className="p-6 flex flex-col gap-4">
               {addSubjectError && (
-                <div className="p-3 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg text-sm border border-red-200 dark:border-red-800">
+                <div className="p-3 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-xl font-mono text-sm border border-red-200 dark:border-red-800">
                   {addSubjectError}
                 </div>
               )}
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Module Name <span className="text-red-500">*</span>
+                <label className="block text-xs font-mono font-bold uppercase tracking-wider text-stone-700 dark:text-stone-300 mb-1.5">
+                  Module Name <span className="text-orange-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -277,33 +279,33 @@ export default function CourseDetailPage() {
                   placeholder="e.g. Introduction to Algebra"
                   value={subjectForm.name}
                   onChange={(e) => setSubjectForm((f) => ({ ...f, name: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3.5 py-2.5 border border-orange-200 dark:border-stone-700 rounded-xl bg-white dark:bg-stone-800 text-stone-900 dark:text-white placeholder-stone-400 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Description <span className="text-gray-400 font-normal">(optional)</span>
+                <label className="block text-xs font-mono font-bold uppercase tracking-wider text-stone-700 dark:text-stone-300 mb-1.5">
+                  Description <span className="text-stone-400 font-normal lowercase">(optional)</span>
                 </label>
                 <textarea
                   rows={3}
                   placeholder="Briefly describe this module..."
                   value={subjectForm.description}
                   onChange={(e) => setSubjectForm((f) => ({ ...f, description: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                  className="w-full px-3.5 py-2.5 border border-orange-200 dark:border-stone-700 rounded-xl bg-white dark:bg-stone-800 text-stone-900 dark:text-white placeholder-stone-400 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 resize-none"
                 />
               </div>
               <div className="flex gap-3 pt-2">
                 <button
                   type="button"
                   onClick={() => setShowAddSubject(false)}
-                  className="flex-1 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors font-medium"
+                  className="flex-1 py-2.5 border border-stone-200 dark:border-stone-700 text-stone-700 dark:text-stone-300 rounded-xl hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors font-mono font-bold text-sm"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={addingSubject}
-                  className="flex-1 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+                  className="flex-1 py-2.5 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 disabled:opacity-60 text-white rounded-xl font-mono font-bold text-sm shadow-md hover:shadow-orange-500/20 transition-all flex items-center justify-center gap-2"
                 >
                   {addingSubject ? <><Loader2 className="w-4 h-4 animate-spin" />Adding...</> : "Add Module"}
                 </button>

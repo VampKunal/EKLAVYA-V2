@@ -64,10 +64,10 @@ export function FileDropzone({ onFileUpload, isUploading }: FileDropzoneProps) {
   return (
     <div className="w-full max-w-2xl mx-auto mt-8">
       <div
-        className={`relative border-2 border-dashed rounded-xl p-12 text-center transition-colors ${
+        className={`relative border-2 border-dashed rounded-2xl p-12 text-center transition-all shadow-md ${
           dragActive
-            ? "border-blue-500 bg-blue-500/10"
-            : "border-gray-700 hover:border-gray-500 hover:bg-gray-800/50"
+            ? "border-orange-500 bg-orange-50/80 shadow-orange-500/10 scale-[1.01]"
+            : "border-orange-200/80 bg-white hover:border-orange-400 hover:bg-orange-50/30"
         }`}
         onDragEnter={handleDrag}
         onDragLeave={handleDrag}
@@ -84,25 +84,30 @@ export function FileDropzone({ onFileUpload, isUploading }: FileDropzoneProps) {
         
         {selectedFile ? (
           <div className="flex flex-col items-center gap-4">
-            <div className="p-4 bg-gray-800 rounded-full">
-              <File className="w-8 h-8 text-blue-400" />
+            <div className="p-4 bg-orange-100/80 rounded-2xl text-orange-600 border border-orange-200 shadow-sm">
+              <File className="w-8 h-8" />
             </div>
             <div>
-              <p className="text-lg font-medium text-gray-200">{selectedFile.name}</p>
-              <p className="text-sm text-gray-400">
+              <p className="text-lg font-mono font-bold text-stone-900">{selectedFile.name}</p>
+              <p className="text-xs font-mono text-stone-400 mt-1">
                 {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
               </p>
             </div>
-            <div className="flex gap-4 mt-4">
+            <div className="flex gap-3 mt-4">
               <Button
                 variant="outline"
                 onClick={() => setSelectedFile(null)}
                 disabled={isUploading}
+                className="font-mono font-bold border-orange-200 text-stone-700 hover:bg-orange-50"
               >
-                <X className="w-4 h-4 mr-2" />
+                <X className="w-4 h-4 mr-1.5" />
                 Clear
               </Button>
-              <Button onClick={handleSubmit} disabled={isUploading}>
+              <Button 
+                onClick={handleSubmit} 
+                disabled={isUploading}
+                className="font-mono font-bold bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-md shadow-orange-500/20"
+              >
                 {isUploading ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -119,21 +124,21 @@ export function FileDropzone({ onFileUpload, isUploading }: FileDropzoneProps) {
           </div>
         ) : (
           <div className="flex flex-col items-center gap-4">
-            <div className="p-4 bg-gray-800 rounded-full">
-              <UploadCloud className="w-8 h-8 text-gray-400" />
+            <div className="p-4 bg-orange-50 rounded-2xl text-orange-500 border border-orange-100 shadow-sm">
+              <UploadCloud className="w-8 h-8" />
             </div>
             <div>
-              <p className="text-lg font-medium text-gray-200">
-                Drag and drop your file here
+              <p className="text-lg font-mono font-bold text-stone-900">
+                DRAG AND DROP YOUR FILE HERE
               </p>
-              <p className="text-sm text-gray-400 mt-1">
+              <p className="text-xs font-mono text-stone-500 mt-1">
                 Supports PDF, DOCX, and TXT (Max 10MB)
               </p>
             </div>
             <Button
               variant="outline"
               onClick={() => inputRef.current?.click()}
-              className="mt-4"
+              className="mt-4 font-mono font-bold border-orange-200 text-stone-700 hover:bg-orange-50"
             >
               Select File
             </Button>

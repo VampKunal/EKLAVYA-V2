@@ -1,12 +1,13 @@
 "use client";
 
-import React, { useState, useRef, useEffect, useCallback } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
-import { Copy, Check, Send, User, Bot, MoreHorizontal, Save, Mic, MicOff, Volume2, Square } from "lucide-react";
+import { Copy, Check, Send, User, Bot, MoreHorizontal, Save, Mic, MicOff, Volume2, Square, Sparkles } from "lucide-react";
 import { useChat } from "@ai-sdk/react";
+import { DefaultChatTransport } from "ai";
 
 // Copy button for code blocks
 const CodeCopyButton = ({ text }: { text: string }) => {
@@ -21,10 +22,10 @@ const CodeCopyButton = ({ text }: { text: string }) => {
   return (
     <button
       onClick={handleCopy}
-      className="absolute top-2 right-2 p-1.5 rounded-md bg-gray-800 text-gray-300 hover:text-white hover:bg-gray-700 transition-colors"
+      className="absolute top-2 right-2 p-1.5 rounded-md bg-stone-800 text-stone-300 hover:text-white hover:bg-orange-600 transition-colors font-mono text-xs flex items-center gap-1"
       title="Copy code"
     >
-      {copied ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
+      {copied ? <Check className="w-3.5 h-3.5 text-green-400" /> : <Copy className="w-3.5 h-3.5" />}
     </button>
   );
 };
@@ -38,7 +39,6 @@ const ReadAloudButton = ({ text }: { text: string }) => {
       window.speechSynthesis.cancel();
       setIsSpeaking(false);
     } else {
-      // Cancel any ongoing speech
       window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.onend = () => setIsSpeaking(false);
@@ -48,7 +48,6 @@ const ReadAloudButton = ({ text }: { text: string }) => {
     }
   };
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (isSpeaking) {
@@ -60,23 +59,23 @@ const ReadAloudButton = ({ text }: { text: string }) => {
   return (
     <button
       onClick={toggleSpeech}
-      className={`p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors mt-2 self-start flex items-center gap-1.5 text-xs ${isSpeaking ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'}`}
+      className={`p-1.5 rounded-lg hover:bg-orange-50 transition-colors mt-2 self-start flex items-center gap-1.5 text-xs font-mono font-bold ${
+        isSpeaking ? 'text-orange-600' : 'text-stone-500 hover:text-orange-600'
+      }`}
       title={isSpeaking ? "Stop reading" : "Read aloud"}
     >
       {isSpeaking ? (
         <>
-          <Square className="w-3.5 h-3.5 fill-current" /> Stop
+          <Square className="w-3.5 h-3.5 fill-current text-orange-500" /> Stop
         </>
       ) : (
         <>
-          <Volume2 className="w-3.5 h-3.5" /> Read Aloud
+          <Volume2 className="w-3.5 h-3.5 text-orange-500" /> Read Aloud
         </>
       )}
     </button>
   );
 };
-
-import { DefaultChatTransport } from "ai";
 
 export default function ChatUI({ courseId, courseName }: { courseId?: string, courseName?: string }) {
   const [input, setInput] = useState("");
@@ -86,23 +85,19 @@ export default function ChatUI({ courseId, courseName }: { courseId?: string, co
   const { messages, sendMessage, status, setMessages } = useChat({
     transport: new DefaultChatTransport({
       api: '/api/chat',
-      body: {
-        courseId,
-      },
+      body: { courseId },
     }),
     onFinish: (message) => {
-      // Save history after AI responds (works for both course & global chat)
       const cid = courseId || 'global';
       saveHistory(cid, [...messages, message]);
     }
   });
 
   const isLoading = status === 'submitted' || status === 'streaming';
-
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [isSaving, setIsSaving] = useState(false);
 
-  // Initialize Speech Recognition
+  // Speech Recognition initialization
   useEffect(() => {
     if (typeof window !== "undefined") {
       const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
@@ -116,9 +111,7 @@ export default function ChatUI({ courseId, courseName }: { courseId?: string, co
           for (let i = event.resultIndex; i < event.results.length; i++) {
              currentTranscript += event.results[i][0].transcript;
           }
-          setInput(prev => {
-             return currentTranscript;
-          });
+          setInput(currentTranscript);
         };
 
         recognition.onerror = (event: any) => {
@@ -141,7 +134,7 @@ export default function ChatUI({ courseId, courseName }: { courseId?: string, co
       setIsListening(false);
     } else {
       if (recognitionRef.current) {
-        setInput(""); // Clear input before new dictation
+        setInput("");
         recognitionRef.current.start();
         setIsListening(true);
       } else {
@@ -154,7 +147,6 @@ export default function ChatUI({ courseId, courseName }: { courseId?: string, co
     const cid = courseId || 'global';
     loadHistory(cid);
   }, [courseId]);
-
 
   const loadHistory = async (cid: string) => {
     try {
@@ -171,7 +163,7 @@ export default function ChatUI({ courseId, courseName }: { courseId?: string, co
           {
             id: "1",
             role: "assistant",
-            parts: [{ type: 'text', text: `Hello! I'm your AI tutor for ${courseName || "this course"}. How can I help you today? \n\nYou can ask me to explain concepts, provide examples, or write code.` }]
+            parts: [{ type: 'text', text: `Hello! I'm your AI tutor for **${courseName || "this workspace"}**. How can I assist your learning today?\n\nFeel free to ask questions, request code samples, or unpack difficult concepts!` }]
           }
         ]);
       }
@@ -226,7 +218,6 @@ export default function ChatUI({ courseId, courseName }: { courseId?: string, co
       toggleListening();
     }
     
-    // Create optimistic user message for saving
     const userMessage = { id: Date.now().toString(), role: "user" as const, parts: [{ type: 'text' as const, text: input }] };
     const cid = courseId || 'global';
     saveHistory(cid, [...messages, userMessage]);
@@ -236,44 +227,55 @@ export default function ChatUI({ courseId, courseName }: { courseId?: string, co
   };
 
   return (
-    <div className="flex flex-col h-[600px] max-h-[80vh] w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden shadow-sm flex-1">
+    <div className="flex flex-col h-[650px] max-h-[85vh] w-full bg-white border border-orange-200/80 rounded-2xl overflow-hidden shadow-xl shadow-orange-500/5 flex-1">
       {/* Header */}
-      <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-950 flex items-center justify-between">
+      <div className="px-5 py-4 border-b border-orange-100 bg-gradient-to-r from-orange-50/80 to-white flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-600 dark:text-blue-400">
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center text-white shadow-md shadow-orange-500/25">
             <Bot className="w-5 h-5" />
           </div>
           <div>
-            <h3 className="font-semibold text-gray-900 dark:text-white">AI Tutor {isSaving && <Save className="w-3 h-3 inline animate-pulse text-gray-400 ml-2" />}</h3>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Always online to help you</p>
+            <h3 className="font-mono font-bold text-stone-900 flex items-center gap-2">
+              AI TUTOR
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-orange-100 text-orange-700 border border-orange-200">
+                <Sparkles className="w-2.5 h-2.5 mr-1 text-orange-500" />
+                Active
+              </span>
+              {isSaving && <Save className="w-3.5 h-3.5 inline animate-pulse text-orange-500" />}
+            </h3>
+            <p className="text-xs text-stone-500 font-mono">Personalized pedagogical mentor</p>
           </div>
         </div>
       </div>
 
       {/* Chat Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-6">
+      <div className="flex-1 overflow-y-auto p-5 space-y-6 bg-stone-50/30">
         {messages.map((msg) => {
           const textContent = Array.isArray(msg.parts)
             ? msg.parts.filter((p: any) => p.type === 'text').map((p: any) => p.text).join('')
             : (msg as any).content || '';
           
           return (
-            <div key={msg.id} className={`flex gap-4 ${msg.role === "user" ? "flex-row-reverse" : "flex-row"}`}>
-              <div className={`w-8 h-8 rounded-full flex shrink-0 items-center justify-center ${msg.role === "user" ? "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300" : "bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400"}`}>
-                {msg.role === "user" ? <User className="w-5 h-5" /> : <Bot className="w-5 h-5" />}
+            <div key={msg.id} className={`flex gap-3.5 ${msg.role === "user" ? "flex-row-reverse" : "flex-row"}`}>
+              <div className={`w-8 h-8 rounded-xl flex shrink-0 items-center justify-center shadow-sm ${
+                msg.role === "user" 
+                  ? "bg-stone-900 text-white font-mono font-bold text-xs" 
+                  : "bg-gradient-to-br from-orange-500 to-orange-600 text-white"
+              }`}>
+                {msg.role === "user" ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
               </div>
-              <div className={`flex flex-col max-w-[85%] sm:max-w-[75%] ${msg.role === "user" ? "items-end" : "items-start"}`}>
+              <div className={`flex flex-col max-w-[85%] sm:max-w-[78%] ${msg.role === "user" ? "items-end" : "items-start"}`}>
                 <div 
-                  className={`px-4 py-3 rounded-2xl ${
+                  className={`px-4 py-3.5 rounded-2xl text-sm leading-relaxed ${
                     msg.role === "user" 
-                      ? "bg-blue-600 text-white rounded-tr-sm" 
-                      : "bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-tl-sm border border-gray-200 dark:border-gray-700"
+                      ? "bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-md shadow-orange-500/20 font-medium rounded-tr-xs" 
+                      : "bg-white text-stone-800 rounded-tl-xs border border-orange-100 shadow-sm"
                   }`}
                 >
                   {msg.role === "user" ? (
                     <p className="whitespace-pre-wrap">{textContent}</p>
                   ) : (
-                    <div className="prose prose-sm dark:prose-invert max-w-none prose-pre:p-0 prose-pre:bg-transparent">
+                    <div className="prose prose-sm max-w-none prose-orange prose-pre:p-0 prose-pre:bg-transparent">
                       <ReactMarkdown
                         remarkPlugins={[remarkGfm]}
                         components={{
@@ -284,24 +286,24 @@ export default function ChatUI({ courseId, courseName }: { courseId?: string, co
                             
                             if (isInline) {
                               return (
-                                <code className="bg-gray-200 dark:bg-gray-700 px-1.5 py-0.5 rounded text-sm font-mono text-gray-800 dark:text-gray-200" {...rest}>
+                                <code className="bg-orange-100/80 text-orange-900 px-1.5 py-0.5 rounded font-mono text-xs border border-orange-200/60 font-semibold" {...rest}>
                                   {children}
                                 </code>
                               );
                             }
                             
                             return match ? (
-                              <div className="relative group rounded-md overflow-hidden my-3 border border-gray-700">
+                              <div className="relative group rounded-xl overflow-hidden my-3 border border-stone-800 shadow-md">
                                 <CodeCopyButton text={String(children).replace(/\n$/, "")} />
-                                <div className="bg-gray-800 text-gray-400 text-xs px-4 py-1.5 border-b border-gray-700 font-mono">
-                                  {match[1]}
+                                <div className="bg-stone-900 text-orange-400 text-[11px] px-4 py-1.5 border-b border-stone-800 font-mono font-bold uppercase tracking-wider flex items-center justify-between">
+                                  <span>{match[1]}</span>
                                 </div>
                                 <SyntaxHighlighter
                                   {...rest}
                                   PreTag="div"
                                   language={match[1]}
                                   style={vscDarkPlus}
-                                  customStyle={{ margin: 0, padding: '1rem', background: '#1e1e1e' }}
+                                  customStyle={{ margin: 0, padding: '1rem', background: '#121212', fontSize: '13px' }}
                                 >
                                   {String(children).replace(/\n$/, "")}
                                 </SyntaxHighlighter>
@@ -320,8 +322,8 @@ export default function ChatUI({ courseId, courseName }: { courseId?: string, co
                   )}
                 </div>
                 {msg.role !== "user" && <ReadAloudButton text={textContent} />}
-                <span className="text-xs text-gray-500 mt-1 mx-1">
-                  {msg.role === "user" ? "You" : "AI Tutor"}
+                <span className="text-[11px] font-mono text-stone-400 mt-1 mx-1">
+                  {msg.role === "user" ? "You" : "Eklavya AI"}
                 </span>
               </div>
             </div>
@@ -329,13 +331,13 @@ export default function ChatUI({ courseId, courseName }: { courseId?: string, co
         })}
 
         {isLoading && messages.length > 0 && messages[messages.length - 1].role === 'user' && (
-          <div className="flex gap-4 flex-row">
-            <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900 flex shrink-0 items-center justify-center text-blue-600 dark:text-blue-400">
-              <Bot className="w-5 h-5" />
+          <div className="flex gap-3.5 flex-row">
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 flex shrink-0 items-center justify-center text-white shadow-sm">
+              <Bot className="w-4 h-4" />
             </div>
             <div className="flex flex-col items-start">
-              <div className="px-4 py-4 rounded-2xl rounded-tl-sm bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 flex items-center h-[46px]">
-                <MoreHorizontal className="w-5 h-5 text-gray-500 animate-pulse" />
+              <div className="px-4 py-3.5 rounded-2xl rounded-tl-xs bg-white border border-orange-100 shadow-sm flex items-center h-[46px]">
+                <MoreHorizontal className="w-5 h-5 text-orange-500 animate-pulse" />
               </div>
             </div>
           </div>
@@ -344,7 +346,7 @@ export default function ChatUI({ courseId, courseName }: { courseId?: string, co
       </div>
 
       {/* Input Area */}
-      <div className="p-4 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800">
+      <div className="p-4 bg-white border-t border-orange-100">
         <form 
           onSubmit={onSubmit}
           className="flex gap-2 relative items-end"
@@ -355,22 +357,21 @@ export default function ChatUI({ courseId, courseName }: { courseId?: string, co
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey) {
                 e.preventDefault();
-                // trigger form submit
                 e.currentTarget.form?.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
               }
             }}
-            placeholder={isListening ? "Listening..." : "Type your question... (Shift+Enter for new line)"}
-            className="w-full bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 pr-20 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none max-h-32 min-h-[50px] text-gray-900 dark:text-gray-100"
+            placeholder={isListening ? "Listening..." : "Ask your AI tutor anything..."}
+            className="w-full bg-stone-50 border border-orange-200/80 rounded-xl px-4 py-3 pr-24 focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500 focus:bg-white resize-none max-h-32 min-h-[50px] text-stone-900 text-sm font-sans transition-all placeholder:text-stone-400 placeholder:font-mono placeholder:text-xs"
             rows={input.split('\n').length > 1 ? Math.min(input.split('\n').length, 4) : 1}
           />
-          <div className="absolute right-2 bottom-2 flex gap-1">
+          <div className="absolute right-2.5 bottom-2.5 flex gap-1.5">
             <button
               type="button"
               onClick={toggleListening}
-              className={`p-2 rounded-lg transition-colors ${
+              className={`p-2 rounded-lg transition-all font-mono text-xs ${
                 isListening 
-                  ? "bg-red-100 text-red-600 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400" 
-                  : "bg-gray-200 text-gray-600 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300"
+                  ? "bg-red-100 text-red-600 border border-red-200 hover:bg-red-200" 
+                  : "bg-orange-100/60 text-orange-600 hover:bg-orange-100 border border-orange-200/60"
               }`}
               title={isListening ? "Stop listening" : "Start voice input"}
             >
@@ -379,17 +380,16 @@ export default function ChatUI({ courseId, courseName }: { courseId?: string, co
             <button
               type="submit"
               disabled={!input.trim() || isLoading}
-              className="p-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="p-2 rounded-lg bg-gradient-to-r from-orange-500 to-orange-600 text-white hover:from-orange-600 hover:to-orange-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm shadow-orange-500/20"
             >
               <Send className="w-4 h-4" />
             </button>
           </div>
         </form>
         <div className="text-center mt-2">
-          <span className="text-[10px] text-gray-400">AI can make mistakes. Verify important information.</span>
+          <span className="text-[10px] font-mono text-stone-400">Eklavya AI is empowered with pedagogical RAG context.</span>
         </div>
       </div>
     </div>
   );
 }
-

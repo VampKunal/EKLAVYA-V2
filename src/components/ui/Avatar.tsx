@@ -8,7 +8,7 @@ export function Avatar({ className = '', fallback, src, alt, ...props }: AvatarP
   const [error, setError] = React.useState(false);
 
   return (
-    <div className={`relative flex h-10 w-10 shrink-0 overflow-hidden rounded-full bg-zinc-800 border border-zinc-700 ${className}`}>
+    <div className={`relative flex h-10 w-10 shrink-0 overflow-hidden rounded-full bg-gradient-to-br from-orange-400 to-orange-600 border-2 border-orange-200 shadow-sm ${className}`}>
       {src && !error ? (
         <img
           src={src}
@@ -18,7 +18,7 @@ export function Avatar({ className = '', fallback, src, alt, ...props }: AvatarP
           {...props}
         />
       ) : (
-        <div className="flex h-full w-full items-center justify-center font-medium text-zinc-400 uppercase text-sm">
+        <div className="flex h-full w-full items-center justify-center font-mono font-bold text-white uppercase text-sm">
           {fallback || alt?.charAt(0) || "?"}
         </div>
       )}

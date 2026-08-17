@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/Card';
-import { CheckCircle, XCircle, Clock, Trophy, Sparkles, Brain, BookOpen, RefreshCw, Globe, FileText, Send, HelpCircle, Loader2 } from 'lucide-react';
+import { CheckCircle, XCircle, Clock, Trophy, Sparkles, Brain, BookOpen, RefreshCw, Globe, FileText, Send, Loader2, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 
 interface QuestionResult {
@@ -158,45 +158,45 @@ export function ResultView({ score, timeTaken, questions, topic = 'General Quiz'
   return (
     <div className="space-y-6 max-w-4xl mx-auto pb-12">
       {/* Quiz Overview Header */}
-      <Card className="text-center py-6 border border-slate-200 dark:border-slate-800 shadow-md">
+      <Card className="text-center py-6 border border-orange-200/80 shadow-lg shadow-orange-500/5 bg-gradient-to-b from-orange-50/40 to-white">
         <CardHeader>
-          <CardTitle className="text-3xl font-bold flex items-center justify-center gap-2">
-            <Trophy className={score >= 80 ? "text-yellow-500" : "text-slate-400"} size={32} />
-            Quiz Complete!
+          <CardTitle className="text-3xl font-mono font-black flex items-center justify-center gap-3 text-stone-900">
+            <Trophy className={score >= 80 ? "text-orange-500 fill-orange-500/20 animate-bounce" : "text-stone-400"} size={36} />
+            QUIZ COMPLETE!
           </CardTitle>
-          <CardDescription className="text-base">
-            Topic: <span className="font-semibold text-foreground">{topic}</span>
+          <CardDescription className="text-sm font-mono text-stone-600 mt-1">
+            TOPIC: <span className="font-bold text-orange-600">{topic}</span>
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-6">
           <div className="grid grid-cols-3 gap-4 max-w-md mx-auto">
-            <div className="bg-slate-100 dark:bg-slate-800/80 p-4 rounded-xl">
-              <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Score</p>
-              <p className={`text-2xl font-extrabold ${score >= 80 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+            <div className="bg-white p-4 rounded-2xl border border-orange-100 shadow-sm">
+              <p className="text-[11px] font-mono font-bold text-stone-400 uppercase tracking-wider">Score</p>
+              <p className={`text-3xl font-mono font-black mt-1 ${score >= 80 ? 'text-emerald-600' : 'text-orange-600'}`}>
                 {score}%
               </p>
             </div>
-            <div className="bg-slate-100 dark:bg-slate-800/80 p-4 rounded-xl">
-              <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Accuracy</p>
-              <p className="text-2xl font-extrabold text-blue-600 dark:text-blue-400">
+            <div className="bg-white p-4 rounded-2xl border border-orange-100 shadow-sm">
+              <p className="text-[11px] font-mono font-bold text-stone-400 uppercase tracking-wider">Accuracy</p>
+              <p className="text-3xl font-mono font-black text-stone-900 mt-1">
                 {questions.length - wrongCount}/{questions.length}
               </p>
             </div>
-            <div className="bg-slate-100 dark:bg-slate-800/80 p-4 rounded-xl">
-              <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Time Taken</p>
-              <p className="text-lg font-bold flex items-center justify-center gap-1 text-slate-700 dark:text-slate-300 mt-1">
-                <Clock size={16} />
+            <div className="bg-white p-4 rounded-2xl border border-orange-100 shadow-sm">
+              <p className="text-[11px] font-mono font-bold text-stone-400 uppercase tracking-wider">Time Taken</p>
+              <p className="text-lg font-mono font-bold flex items-center justify-center gap-1.5 text-stone-700 mt-2">
+                <Clock size={16} className="text-orange-500" />
                 {formatTime(timeTaken)}
               </p>
             </div>
           </div>
 
           {/* Action Buttons */}
-          <div className="mt-6 flex justify-center gap-4 flex-wrap">
+          <div className="flex justify-center gap-4 flex-wrap pt-2">
             {onRetry && (
               <Button 
                 onClick={onRetry}
-                className="gap-2 bg-blue-600 hover:bg-blue-700 text-white"
+                className="gap-2 font-mono font-bold bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-md shadow-orange-500/25"
               >
                 <RefreshCw size={16} />
                 Try Another Quiz
@@ -206,8 +206,9 @@ export function ResultView({ score, timeTaken, questions, topic = 'General Quiz'
               <Button 
                 onClick={onBack}
                 variant="outline"
-                className="gap-2"
+                className="gap-2 font-mono font-bold border-orange-200 text-stone-700 hover:bg-orange-50"
               >
+                <ArrowLeft size={16} />
                 Back to Dashboard
               </Button>
             )}
@@ -217,15 +218,17 @@ export function ResultView({ score, timeTaken, questions, topic = 'General Quiz'
 
       {/* Global AI Remediation Notice if mistakes were made */}
       {wrongCount > 0 && (
-        <div className="bg-gradient-to-r from-purple-900/20 via-indigo-900/20 to-blue-900/20 border border-purple-500/30 rounded-xl p-5 shadow-sm">
+        <div className="bg-gradient-to-r from-orange-500/10 via-amber-500/10 to-orange-500/5 border border-orange-300 rounded-2xl p-5 shadow-sm">
           <div className="flex items-start gap-4">
-            <div className="p-3 bg-purple-500/10 text-purple-400 rounded-lg">
+            <div className="p-3 bg-gradient-to-br from-orange-500 to-orange-600 text-white rounded-xl shadow-md shadow-orange-500/30">
               <Sparkles size={24} />
             </div>
             <div>
-              <h4 className="font-bold text-lg text-purple-200">LangGraph AI Misconception Diagnosis Active</h4>
-              <p className="text-sm text-purple-300/80 mt-1">
-                You missed {wrongCount} question{wrongCount > 1 ? 's' : ''}. Use the <strong>"AI Misconception Remediation"</strong> button on any incorrect answer below to get personalized diagnostic feedback, a 3-bullet micro-lesson, and an adaptive retest question!
+              <h4 className="font-mono font-bold text-lg text-stone-900 flex items-center gap-2">
+                LANGGRAPH AI MISCONCEPTION DIAGNOSIS ACTIVE
+              </h4>
+              <p className="text-sm font-sans text-stone-600 mt-1 leading-relaxed">
+                You missed {wrongCount} question{wrongCount > 1 ? 's' : ''}. Click the <strong className="font-mono font-bold text-orange-600">"AI Misconception Remediation"</strong> button on any incorrect question below for custom diagnostic analysis, a 3-bullet micro-lesson, and an adaptive retry problem!
               </p>
             </div>
           </div>
@@ -234,10 +237,10 @@ export function ResultView({ score, timeTaken, questions, topic = 'General Quiz'
 
       {/* Detailed Question Breakdown */}
       <div className="space-y-6">
-        <h3 className="text-xl font-bold flex items-center gap-2">
-          <span>Question Breakdown</span>
-          <span className="text-xs bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-2.5 py-0.5 rounded-full font-medium">
-            {questions.length} Questions
+        <h3 className="text-xl font-mono font-bold flex items-center justify-between text-stone-900">
+          <span>QUESTION BREAKDOWN</span>
+          <span className="text-xs bg-orange-100 text-orange-800 px-3 py-1 rounded-full font-mono font-bold border border-orange-200">
+            {questions.length} QUESTIONS
           </span>
         </h3>
 
@@ -246,51 +249,51 @@ export function ResultView({ score, timeTaken, questions, topic = 'General Quiz'
           const crag = cragStates[idx];
 
           return (
-            <Card key={idx} className={`border-l-4 shadow-sm transition-all ${q.isCorrect ? 'border-l-green-500' : 'border-l-red-500'}`}>
+            <Card key={idx} className={`border-l-4 shadow-md transition-all ${q.isCorrect ? 'border-l-emerald-500' : 'border-l-orange-500'}`}>
               <CardContent className="pt-6 space-y-4">
-                <div className="flex items-start gap-3">
+                <div className="flex items-start gap-3.5">
                   <div className="mt-1 flex-shrink-0">
                     {q.isCorrect ? (
-                      <CheckCircle className="text-green-500" size={24} />
+                      <CheckCircle className="text-emerald-500" size={24} />
                     ) : (
-                      <XCircle className="text-red-500" size={24} />
+                      <XCircle className="text-orange-500" size={24} />
                     )}
                   </div>
 
-                  <div className="flex-1 space-y-3">
+                  <div className="flex-1 space-y-3.5">
                     <div className="flex justify-between items-start gap-2">
-                      <p className="font-semibold text-lg text-foreground">
-                        <span className="text-muted-foreground mr-2">Q{idx + 1}.</span>
+                      <p className="font-semibold text-base text-stone-900 leading-snug">
+                        <span className="font-mono font-bold text-orange-600 mr-2">Q{idx + 1}.</span>
                         {q.questionText}
                       </p>
-                      <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+                      <span className={`text-xs font-mono font-bold px-2.5 py-0.5 rounded-full border ${
                         q.isCorrect 
-                          ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400' 
-                          : 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400'
+                          ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
+                          : 'bg-orange-50 text-orange-700 border-orange-200'
                       }`}>
-                        {q.isCorrect ? 'Correct' : 'Incorrect'}
+                        {q.isCorrect ? 'CORRECT' : 'INCORRECT'}
                       </span>
                     </div>
 
                     {/* Multiple Choice Options */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-2">
                       {q.options.map((opt, i) => {
-                        let optionClass = "p-3 rounded-lg border text-sm font-medium transition-all ";
+                        let optionClass = "p-3 rounded-xl border text-sm font-medium transition-all ";
 
                         if (opt === q.correctAnswer) {
-                          optionClass += "bg-green-50 border-green-500 text-green-900 dark:bg-green-950/40 dark:border-green-600 dark:text-green-300 font-semibold";
+                          optionClass += "bg-emerald-50/80 border-emerald-400 text-emerald-900 font-semibold shadow-sm";
                         } else if (opt === q.userAnswer && !q.isCorrect) {
-                          optionClass += "bg-red-50 border-red-500 text-red-900 dark:bg-red-950/40 dark:border-red-600 dark:text-red-300";
+                          optionClass += "bg-orange-50/80 border-orange-400 text-orange-900 font-semibold shadow-sm";
                         } else {
-                          optionClass += "bg-slate-50 border-slate-200 text-slate-700 dark:bg-slate-900/50 dark:border-slate-800 dark:text-slate-300";
+                          optionClass += "bg-stone-50 border-stone-200 text-stone-700";
                         }
 
                         return (
                           <div key={i} className={optionClass}>
                             <div className="flex items-center justify-between">
                               <span>{opt}</span>
-                              {opt === q.correctAnswer && <span className="text-xs bg-green-200 dark:bg-green-800 text-green-800 dark:text-green-100 px-1.5 py-0.5 rounded">Correct Choice</span>}
-                              {opt === q.userAnswer && !q.isCorrect && <span className="text-xs bg-red-200 dark:bg-red-800 text-red-800 dark:text-red-100 px-1.5 py-0.5 rounded">Your Answer</span>}
+                              {opt === q.correctAnswer && <span className="text-[10px] font-mono font-bold bg-emerald-200 text-emerald-900 px-2 py-0.5 rounded-md">Correct Choice</span>}
+                              {opt === q.userAnswer && !q.isCorrect && <span className="text-[10px] font-mono font-bold bg-orange-200 text-orange-900 px-2 py-0.5 rounded-md">Your Answer</span>}
                             </div>
                           </div>
                         );
@@ -299,8 +302,8 @@ export function ResultView({ score, timeTaken, questions, topic = 'General Quiz'
 
                     {/* Standard Explanation if present */}
                     {q.explanation && (
-                      <div className="p-3.5 bg-blue-50/70 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800/50 text-blue-900 dark:text-blue-200 rounded-lg text-sm">
-                        <strong className="font-semibold">Explanation:</strong> {q.explanation}
+                      <div className="p-4 bg-orange-50/60 border border-orange-200 text-stone-800 rounded-xl text-sm leading-relaxed">
+                        <strong className="font-mono font-bold text-orange-700">EXPLANATION:</strong> {q.explanation}
                       </div>
                     )}
 
@@ -308,10 +311,9 @@ export function ResultView({ score, timeTaken, questions, topic = 'General Quiz'
                     <div className="flex flex-wrap gap-3 pt-2">
                       <Button
                         size="sm"
-                        variant={rem?.misconception ? "outline" : "primary"}
                         onClick={() => handleRemediate(idx, q)}
                         disabled={rem?.loading}
-                        className="gap-2 bg-purple-600 hover:bg-purple-700 text-white dark:bg-purple-600 dark:hover:bg-purple-700"
+                        className="gap-2 font-mono font-bold bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-sm shadow-orange-500/20"
                       >
                         {rem?.loading ? (
                           <>
@@ -331,7 +333,7 @@ export function ResultView({ score, timeTaken, questions, topic = 'General Quiz'
                         variant="outline"
                         onClick={() => handleCRAGQuery(idx)}
                         disabled={crag?.loading}
-                        className="gap-2 border-indigo-500/40 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/30"
+                        className="gap-2 font-mono font-bold border-orange-200 text-stone-700 hover:bg-orange-50"
                       >
                         {crag?.loading ? (
                           <>
@@ -349,30 +351,30 @@ export function ResultView({ score, timeTaken, questions, topic = 'General Quiz'
 
                     {/* 1. LangGraph Quiz Remediation Output Card */}
                     {rem && (
-                      <div className="mt-4 rounded-xl border border-purple-200 dark:border-purple-900/60 bg-purple-50/50 dark:bg-purple-950/20 p-5 space-y-4 animate-fadeIn">
-                        <div className="flex items-center gap-2 text-purple-700 dark:text-purple-300 font-bold border-b border-purple-200 dark:border-purple-800/50 pb-2">
-                          <Brain size={20} />
-                          <span>LangGraph Remediation Diagnosis</span>
+                      <div className="mt-4 rounded-2xl border border-orange-200 bg-orange-50/40 p-5 space-y-4 animate-fadeIn">
+                        <div className="flex items-center gap-2 text-stone-900 font-mono font-bold border-b border-orange-200/80 pb-2">
+                          <Brain size={20} className="text-orange-500" />
+                          <span>LANGGRAPH REMEDIATION DIAGNOSIS</span>
                         </div>
 
                         {rem.error && (
-                          <p className="text-sm text-red-600 dark:text-red-400">{rem.error}</p>
+                          <p className="text-sm font-mono text-red-600">{rem.error}</p>
                         )}
 
                         {rem.misconception && (
                           <div className="space-y-3">
-                            <div className="bg-white dark:bg-slate-900/80 p-3.5 rounded-lg border border-purple-100 dark:border-purple-900/40">
-                              <h5 className="text-xs uppercase tracking-wider font-bold text-purple-600 dark:text-purple-400 mb-1">Identified Misconception</h5>
-                              <p className="text-sm text-slate-800 dark:text-slate-200 font-medium">{rem.misconception}</p>
+                            <div className="bg-white p-4 rounded-xl border border-orange-100 shadow-sm">
+                              <h5 className="text-[11px] font-mono font-bold uppercase tracking-wider text-orange-600 mb-1">Identified Misconception</h5>
+                              <p className="text-sm text-stone-800 font-medium">{rem.misconception}</p>
                             </div>
 
                             {rem.microLesson && (
-                              <div className="bg-white dark:bg-slate-900/80 p-3.5 rounded-lg border border-purple-100 dark:border-purple-900/40">
-                                <h5 className="text-xs uppercase tracking-wider font-bold text-indigo-600 dark:text-indigo-400 mb-2 flex items-center gap-1">
-                                  <BookOpen size={14} />
+                              <div className="bg-white p-4 rounded-xl border border-orange-100 shadow-sm">
+                                <h5 className="text-[11px] font-mono font-bold uppercase tracking-wider text-stone-900 mb-2 flex items-center gap-1.5">
+                                  <BookOpen size={14} className="text-orange-500" />
                                   Targeted Micro-Lesson
                                 </h5>
-                                <div className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-line leading-relaxed">
+                                <div className="text-sm text-stone-700 whitespace-pre-line leading-relaxed font-sans">
                                   {rem.microLesson}
                                 </div>
                               </div>
@@ -380,13 +382,13 @@ export function ResultView({ score, timeTaken, questions, topic = 'General Quiz'
 
                             {/* Adaptive Retest Question */}
                             {rem.retryQuestion && (
-                              <div className="bg-white dark:bg-slate-900/90 p-4 rounded-lg border border-purple-300 dark:border-purple-800 shadow-sm space-y-3">
+                              <div className="bg-white p-4 rounded-xl border border-orange-300 shadow-md space-y-3">
                                 <div className="flex items-center justify-between">
-                                  <span className="text-xs font-bold bg-purple-100 dark:bg-purple-900/60 text-purple-800 dark:text-purple-200 px-2 py-0.5 rounded">
+                                  <span className="text-xs font-mono font-bold bg-orange-100 text-orange-800 px-2.5 py-0.5 rounded-full border border-orange-200">
                                     Adaptive Retest Question
                                   </span>
                                 </div>
-                                <p className="font-semibold text-sm text-slate-900 dark:text-slate-100">
+                                <p className="font-semibold text-sm text-stone-900">
                                   {rem.retryQuestion.questionText}
                                 </p>
 
@@ -398,14 +400,14 @@ export function ResultView({ score, timeTaken, questions, topic = 'General Quiz'
                                     let btnStyle = "p-2.5 rounded-lg border text-left text-xs font-medium transition-all ";
                                     if (rem.retrySubmitted) {
                                       if (isCorrectOpt) {
-                                        btnStyle += "bg-green-100 border-green-500 text-green-900 dark:bg-green-900/50 dark:text-green-200 font-semibold";
+                                        btnStyle += "bg-emerald-100 border-emerald-500 text-emerald-900 font-semibold";
                                       } else if (isSelected && !isCorrectOpt) {
-                                        btnStyle += "bg-red-100 border-red-500 text-red-900 dark:bg-red-900/50 dark:text-red-200";
+                                        btnStyle += "bg-orange-100 border-orange-500 text-orange-900";
                                       } else {
-                                        btnStyle += "bg-slate-50 border-slate-200 dark:bg-slate-800 dark:border-slate-700 text-slate-500 opacity-60";
+                                        btnStyle += "bg-stone-50 border-stone-200 text-stone-400 opacity-60";
                                       }
                                     } else {
-                                      btnStyle += "bg-slate-50 hover:bg-purple-50 border-slate-200 hover:border-purple-400 dark:bg-slate-800 dark:hover:bg-purple-950/40 dark:border-slate-700";
+                                      btnStyle += "bg-stone-50 hover:bg-orange-50 border-stone-200 hover:border-orange-300 text-stone-800";
                                     }
 
                                     return (
@@ -422,15 +424,15 @@ export function ResultView({ score, timeTaken, questions, topic = 'General Quiz'
                                 </div>
 
                                 {rem.retrySubmitted && (
-                                  <div className={`p-3 rounded-lg text-xs font-medium mt-2 ${
+                                  <div className={`p-3 rounded-xl text-xs font-medium mt-2 ${
                                     rem.selectedRetryOption === rem.retryQuestion.correctAnswer
-                                      ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 border border-green-300'
-                                      : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300 border border-red-300'
+                                      ? 'bg-emerald-50 text-emerald-800 border border-emerald-300'
+                                      : 'bg-orange-50 text-orange-800 border border-orange-300'
                                   }`}>
-                                    <div className="font-bold mb-1">
+                                    <div className="font-mono font-bold mb-1">
                                       {rem.selectedRetryOption === rem.retryQuestion.correctAnswer ? '🎉 Correct! Misconception Mastered.' : '❌ Incorrect.'}
                                     </div>
-                                    <div>{rem.retryQuestion.explanation}</div>
+                                    <div className="font-sans leading-relaxed">{rem.retryQuestion.explanation}</div>
                                   </div>
                                 )}
                               </div>
@@ -442,17 +444,17 @@ export function ResultView({ score, timeTaken, questions, topic = 'General Quiz'
 
                     {/* 2. CRAG (Corrective RAG) Output Card */}
                     {crag && (
-                      <div className="mt-4 rounded-xl border border-indigo-200 dark:border-indigo-900/60 bg-indigo-50/50 dark:bg-indigo-950/20 p-5 space-y-3 animate-fadeIn">
-                        <div className="flex items-center justify-between border-b border-indigo-200 dark:border-indigo-800/50 pb-2">
-                          <div className="flex items-center gap-2 text-indigo-700 dark:text-indigo-300 font-bold">
-                            <Globe size={18} />
-                            <span>Corrective RAG (CRAG) Agent Response</span>
+                      <div className="mt-4 rounded-2xl border border-orange-200 bg-white p-5 space-y-3 shadow-md animate-fadeIn">
+                        <div className="flex items-center justify-between border-b border-orange-100 pb-2">
+                          <div className="flex items-center gap-2 text-stone-900 font-mono font-bold">
+                            <Globe size={18} className="text-orange-500" />
+                            <span>CORRECTIVE RAG (CRAG) AGENT RESPONSE</span>
                           </div>
                           {crag.webSearchUsed !== undefined && (
-                            <span className={`text-xs px-2 py-0.5 rounded-full font-semibold flex items-center gap-1 ${
+                            <span className={`text-[11px] font-mono font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1.5 border ${
                               crag.webSearchUsed
-                                ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300'
-                                : 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300'
+                                ? 'bg-amber-50 text-amber-800 border-amber-200'
+                                : 'bg-emerald-50 text-emerald-800 border-emerald-200'
                             }`}>
                               {crag.webSearchUsed ? <Globe size={12} /> : <FileText size={12} />}
                               {crag.webSearchUsed ? 'Tavily Web Search Used' : `Vector DB Context (${crag.documentsUsed} docs)`}
@@ -461,11 +463,11 @@ export function ResultView({ score, timeTaken, questions, topic = 'General Quiz'
                         </div>
 
                         {crag.error && (
-                          <p className="text-sm text-red-600 dark:text-red-400">{crag.error}</p>
+                          <p className="text-sm font-mono text-red-600">{crag.error}</p>
                         )}
 
                         {crag.answer && (
-                          <div className="bg-white dark:bg-slate-900/90 p-4 rounded-lg border border-indigo-100 dark:border-indigo-900/40 text-sm text-slate-800 dark:text-slate-200 whitespace-pre-line leading-relaxed">
+                          <div className="bg-stone-50 p-4 rounded-xl border border-orange-100 text-sm text-stone-800 whitespace-pre-line leading-relaxed font-sans">
                             {crag.answer}
                           </div>
                         )}
@@ -483,13 +485,13 @@ export function ResultView({ score, timeTaken, questions, topic = 'General Quiz'
                             onKeyDown={(e) => {
                               if (e.key === 'Enter') handleCRAGQuery(idx, crag.query);
                             }}
-                            className="flex-1 text-xs p-2.5 rounded-lg border dark:bg-slate-900 dark:border-slate-800"
+                            className="flex-1 text-xs p-2.5 rounded-xl border border-orange-200 bg-stone-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-500/50"
                           />
                           <Button
                             size="sm"
                             onClick={() => handleCRAGQuery(idx, crag.query)}
                             disabled={crag.loading || !crag.query}
-                            className="gap-1 bg-indigo-600 hover:bg-indigo-700 text-white"
+                            className="gap-1 font-mono font-bold bg-orange-600 hover:bg-orange-700 text-white"
                           >
                             <Send size={12} />
                             Ask
