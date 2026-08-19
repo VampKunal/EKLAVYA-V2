@@ -4,6 +4,22 @@ import { authOptions } from '@/lib/auth';
 import { asyncHandler } from '@/utils/asyncHandler';
 import QuizAttempt from '@/models/QuizAttempt';
 import connectToDatabase from '@/lib/mongodb';
+import { generateObject } from 'ai';
+import { z } from 'zod';
+import { callModel } from '@/lib/ai/model-router';
+
+const recommendationSchema = z.object({
+  recommendations: z.array(
+    z.object({
+      topic: z.string().describe('The topic name'),
+      subTopic: z.string().optional().describe('Optional specific subtopic to practice'),
+      courseId: z.string().optional().describe('Associated course ID if available'),
+      reason: z.string().describe('Personalized, encouraging, actionable explanation of why the student should focus on this topic'),
+      type: z.enum(['weak', 'refresh', 'challenge']).describe('Category of recommendation'),
+      priority: z.number().describe('Priority integer from 1 (highest) to 3'),
+    })
+  ).describe('Top 3 to 5 tailored study recommendations based on student performance data'),
+});
 
 export const GET = asyncHandler(async (req: Request) => {
   const session = await getServerSession(authOptions);
@@ -18,7 +34,7 @@ export const GET = asyncHandler(async (req: Request) => {
   const UserProgress = (await import('@/models/UserProgress')).default;
   const progressRecords = await UserProgress.find({ userId }).lean();
 
-  const recommendations: any[] = [];
+  const ruleBasedRecommendations: any[] = [];
   const masteredTopics = new Set<string>();
 
   progressRecords.forEach((p: any) => {
@@ -26,7 +42,7 @@ export const GET = asyncHandler(async (req: Request) => {
     
     (p.weakTopics || []).forEach((wt: any) => {
       if (!masteredTopics.has(wt.topic.toLowerCase())) {
-        recommendations.push({
+        ruleBasedRecommendations.push({
           topic: wt.topic,
           subTopic: wt.subTopic,
           courseId: p.courseId?.toString(),
@@ -66,11 +82,11 @@ export const GET = asyncHandler(async (req: Request) => {
     const accuracy = Math.round(stats.totalScore / stats.count);
     const daysSince = Math.floor((now.getTime() - new Date(stats.lastAttemptDate).getTime()) / (1000 * 3600 * 24));
 
-    const alreadyAdded = recommendations.some((r) => r.topic.toLowerCase() === topic.toLowerCase());
+    const alreadyAdded = ruleBasedRecommendations.some((r) => r.topic.toLowerCase() === topic.toLowerCase());
 
     if (!alreadyAdded) {
       if (accuracy < 70) {
-        recommendations.push({
+        ruleBasedRecommendations.push({
           topic,
           courseId: stats.courseId,
           reason: `Accuracy is ${accuracy}%. Needs practice on weak sub-topics.`,
@@ -78,7 +94,7 @@ export const GET = asyncHandler(async (req: Request) => {
           priority: 1,
         });
       } else if (daysSince > 10 && accuracy >= 75) {
-        recommendations.push({
+        ruleBasedRecommendations.push({
           topic,
           courseId: stats.courseId,
           reason: 'It has been a while since you practiced this topic. Refresh your memory.',
@@ -89,9 +105,43 @@ export const GET = asyncHandler(async (req: Request) => {
     }
   });
 
-  // Sort by priority and return top 5
-  recommendations.sort((a, b) => a.priority - b.priority);
+  ruleBasedRecommendations.sort((a, b) => a.priority - b.priority);
 
-  return NextResponse.json({ recommendations: recommendations.slice(0, 5) });
+  // Attempt AI-Driven Recommendation Generation
+  if (ruleBasedRecommendations.length > 0 || Object.keys(topicStats).length > 0) {
+    try {
+      const summaryContext = {
+        masteredTopics: Array.from(masteredTopics),
+        identifiedWeakTopics: ruleBasedRecommendations.map(r => ({ topic: r.topic, reason: r.reason })),
+        recentPerformanceStats: Object.entries(topicStats).map(([topic, s]) => ({
+          topic,
+          averageAccuracy: Math.round(s.totalScore / s.count),
+          attempts: s.count
+        }))
+      };
+
+      const prompt = `Analyze this student's recent performance summary and generate 3 to 5 highly personalized, encouraging study recommendations.
+Prioritize areas needing improvement (accuracy < 70%), suggest refresher sessions for old topics, or suggest advanced challenges for mastered areas.
+
+Student Context:
+${JSON.stringify(summaryContext, null, 2)}`;
+
+      const { object } = await generateObject({
+        model: callModel('general'),
+        schema: recommendationSchema,
+        prompt,
+      });
+
+      if (object && object.recommendations && object.recommendations.length > 0) {
+        return NextResponse.json({ recommendations: object.recommendations.slice(0, 5) });
+      }
+    } catch (aiErr) {
+      console.warn('[recommendations] AI generation fallback triggered:', aiErr);
+    }
+  }
+
+  // Fallback to rule-based recommendations
+  return NextResponse.json({ recommendations: ruleBasedRecommendations.slice(0, 5) });
 });
+
 

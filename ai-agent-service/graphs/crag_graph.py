@@ -1,56 +1,86 @@
 from typing import List, TypedDict, Optional
+from pydantic import BaseModel, Field
 from langgraph.graph import StateGraph, END
 from tavily import TavilyClient
 from config import settings
 
+_llm_instance = None
+_embeddings_instance = None
+
 def get_llm():
-    """Return Google Gemini (gemini-2.5-flash) if key is present, else OpenRouter / OpenAI fallback."""
+    """Return cached singleton LLM instance."""
+    global _llm_instance
+    if _llm_instance is not None:
+        return _llm_instance
+
     if settings.GOOGLE_AI_API_KEY:
         try:
             from langchain_google_genai import ChatGoogleGenerativeAI
-            return ChatGoogleGenerativeAI(
+            _llm_instance = ChatGoogleGenerativeAI(
                 model="gemini-2.5-flash",
                 google_api_key=settings.GOOGLE_AI_API_KEY,
                 temperature=0.1
             )
+            return _llm_instance
         except Exception as e:
             print(f"[CRAG Graph] Google GenAI init warning: {e}")
 
     if settings.OPENROUTER_API_KEY:
         try:
             from langchain_openai import ChatOpenAI
-            return ChatOpenAI(
+            _llm_instance = ChatOpenAI(
                 model="google/gemini-2.5-flash",
                 openai_api_key=settings.OPENROUTER_API_KEY,
                 openai_api_base="https://openrouter.ai/api/v1",
                 temperature=0.1
             )
+            return _llm_instance
         except Exception as e:
             print(f"[CRAG Graph] OpenRouter init warning: {e}")
 
     from langchain_openai import ChatOpenAI
-    return ChatOpenAI(model="gpt-4o-mini", api_key=settings.OPENAI_API_KEY, temperature=0.1)
+    _llm_instance = ChatOpenAI(model="gpt-4o-mini", api_key=settings.OPENAI_API_KEY, temperature=0.1)
+    return _llm_instance
+
 
 def get_embeddings():
-    """Return embeddings model for vector search if available."""
-    if settings.GOOGLE_AI_API_KEY:
-        try:
-            from langchain_google_genai import GoogleGenerativeAIEmbeddings
-            return GoogleGenerativeAIEmbeddings(
-                model="text-embedding-004",
-                google_api_key=settings.GOOGLE_AI_API_KEY
-            )
-        except Exception as e:
-            print(f"[CRAG Graph] Google Embeddings warning: {e}")
+    """Return cached singleton embeddings model."""
+    global _embeddings_instance
+    if _embeddings_instance is not None:
+        return _embeddings_instance
 
     if settings.OPENAI_API_KEY:
         try:
             from langchain_openai import OpenAIEmbeddings
-            return OpenAIEmbeddings(openai_api_key=settings.OPENAI_API_KEY)
+            _embeddings_instance = OpenAIEmbeddings(openai_api_key=settings.OPENAI_API_KEY)
+            return _embeddings_instance
         except Exception as e:
             print(f"[CRAG Graph] OpenAI Embeddings warning: {e}")
-            
+
+    if settings.GOOGLE_AI_API_KEY:
+        try:
+            from langchain_google_genai import GoogleGenerativeAIEmbeddings
+            _embeddings_instance = GoogleGenerativeAIEmbeddings(
+                model="models/embedding-001",
+                google_api_key=settings.GOOGLE_AI_API_KEY
+            )
+            return _embeddings_instance
+        except Exception as e:
+            print(f"[CRAG Graph] Google Embeddings warning: {e}")
+
     return None
+
+
+
+class DocumentRelevanceSchema(BaseModel):
+    is_relevant: bool = Field(description="True if documents contain sufficient relevant context to answer the question, False otherwise.")
+    reason: Optional[str] = Field(default="", description="Brief rationale for the relevance score")
+
+
+class HallucinationEvaluationSchema(BaseModel):
+    is_grounded: bool = Field(description="True if the generated answer is grounded in retrieved context, False if fabricated.")
+    score: str = Field(description="PASSED or FAILED")
+
 
 # State Schema
 class CRAGState(TypedDict):
@@ -123,7 +153,7 @@ def retrieve_node(state: CRAGState) -> dict:
 
     return {"documents": docs}
 
-# Node 2: Document Relevance Grader
+# Node 2: Document Relevance Grader (Pydantic Structured Output)
 def grade_documents_node(state: CRAGState) -> dict:
     question = state["question"]
     documents = state.get("documents", [])
@@ -134,19 +164,22 @@ def grade_documents_node(state: CRAGState) -> dict:
     llm = get_llm()
     context_str = "\n\n".join(documents)
     
-    prompt = f"""You are a strict relevance grader. Determine if the following documents contain sufficient relevant information to accurately answer the student's question.
+    prompt = f"""You are a strict document relevance grader. Determine if the following retrieved context contains sufficient, relevant information to accurately answer the student's question.
 
 Question: {question}
 
 Documents:
-{context_str}
-
-Respond with EXACTLY 'YES' if relevant or 'NO' if irrelevant/insufficient."""
+{context_str}"""
 
     try:
-        res = llm.invoke(prompt)
-        text = res.content.strip().upper()
-        is_rel = "YES" in text
+        if hasattr(llm, "with_structured_output"):
+            structured_llm = llm.with_structured_output(DocumentRelevanceSchema)
+            res_obj = structured_llm.invoke(prompt)
+            is_rel = res_obj.is_relevant
+        else:
+            res = llm.invoke(prompt + "\n\nRespond with EXACTLY 'YES' if relevant or 'NO' if irrelevant/insufficient.")
+            text = res.content.strip().upper()
+            is_rel = "YES" in text
         return {"is_relevant": is_rel, "web_search_needed": not is_rel}
     except Exception as e:
         print(f"[CRAG Graph] Grading error: {e}")
@@ -205,7 +238,7 @@ Answer:"""
         
     return {"final_answer": answer}
 
-# Node 5: Hallucination & Fact Check Node
+# Node 5: Hallucination & Fact Check Node (Pydantic Structured Output)
 def hallucination_check_node(state: CRAGState) -> dict:
     answer = state.get("final_answer", "")
     documents = state.get("documents", [])
@@ -222,13 +255,16 @@ Retrieved Context:
 {context_str}
 
 Generated Answer:
-{answer}
-
-Respond with EXACTLY 'PASSED' if the answer is accurate and grounded, or 'FAILED' if it introduces fabricated facts."""
+{answer}"""
 
     try:
-        res = llm.invoke(prompt)
-        score = "PASSED" if "PASSED" in res.content.strip().upper() else "WARNING_HALLUCINATION_SUSPECTED"
+        if hasattr(llm, "with_structured_output"):
+            structured_llm = llm.with_structured_output(HallucinationEvaluationSchema)
+            res_obj = structured_llm.invoke(prompt)
+            score = "PASSED" if res_obj.is_grounded else "WARNING_HALLUCINATION_SUSPECTED"
+        else:
+            res = llm.invoke(prompt + "\n\nRespond with EXACTLY 'PASSED' if accurate and grounded, or 'FAILED' if fabricated.")
+            score = "PASSED" if "PASSED" in res.content.strip().upper() else "WARNING_HALLUCINATION_SUSPECTED"
     except Exception as e:
         score = "PASSED"
         
@@ -267,4 +303,5 @@ def build_crag_graph():
     return workflow.compile()
 
 crag_app = build_crag_graph()
+
 

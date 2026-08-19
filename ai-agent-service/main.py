@@ -1,3 +1,4 @@
+import asyncio
 from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -95,7 +96,7 @@ async def run_crag_agent(req: CRAGRequest):
     }
     
     try:
-        final_state = crag_app.invoke(initial_state)
+        final_state = await asyncio.to_thread(crag_app.invoke, initial_state)
         response_payload = {
             "answer": final_state.get("final_answer", ""),
             "webSearchUsed": final_state.get("web_search_needed", False),
@@ -121,7 +122,7 @@ async def run_quiz_remediation(req: QuizRemediationRequest):
     }
     
     try:
-        final_state = quiz_remediation_app.invoke(initial_state)
+        final_state = await asyncio.to_thread(quiz_remediation_app.invoke, initial_state)
         return {
             "misconception": final_state.get("misconception"),
             "microLesson": final_state.get("micro_lesson"),
@@ -143,7 +144,7 @@ async def run_curriculum_agent(req: CurriculumRequest):
     }
     
     try:
-        final_state = curriculum_app.invoke(initial_state)
+        final_state = await asyncio.to_thread(curriculum_app.invoke, initial_state)
         roadmap = final_state.get("final_roadmap") or final_state.get("roadmap_draft")
         return {"roadmap": roadmap}
     except Exception as e:
