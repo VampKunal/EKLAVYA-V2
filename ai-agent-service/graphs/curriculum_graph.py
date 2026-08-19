@@ -12,18 +12,6 @@ def get_llm():
     if _llm_instance is not None:
         return _llm_instance
 
-    if settings.GOOGLE_AI_API_KEY:
-        try:
-            from langchain_google_genai import ChatGoogleGenerativeAI
-            _llm_instance = ChatGoogleGenerativeAI(
-                model="gemini-2.5-flash",
-                google_api_key=settings.GOOGLE_AI_API_KEY,
-                temperature=0.3
-            )
-            return _llm_instance
-        except Exception as e:
-            print(f"[Curriculum Agent] Google GenAI init warning: {e}")
-
     if settings.OPENROUTER_API_KEY:
         try:
             from langchain_openai import ChatOpenAI
@@ -31,11 +19,32 @@ def get_llm():
                 model="google/gemini-2.5-flash",
                 openai_api_key=settings.OPENROUTER_API_KEY,
                 openai_api_base="https://openrouter.ai/api/v1",
-                temperature=0.3
+                temperature=0.3,
+                max_tokens=1000
             )
             return _llm_instance
         except Exception as e:
             print(f"[Curriculum Agent] OpenRouter init warning: {e}")
+
+    if settings.OPENAI_API_KEY:
+        try:
+            from langchain_openai import ChatOpenAI
+            _llm_instance = ChatOpenAI(model="gpt-4o-mini", api_key=settings.OPENAI_API_KEY, temperature=0.3)
+            return _llm_instance
+        except Exception as e:
+            print(f"[Curriculum Agent] OpenAI init warning: {e}")
+
+    if settings.GOOGLE_AI_API_KEY:
+        try:
+            from langchain_google_genai import ChatGoogleGenerativeAI
+            _llm_instance = ChatGoogleGenerativeAI(
+                model="gemini-3.6-flash",
+                google_api_key=settings.GOOGLE_AI_API_KEY,
+                temperature=0.3
+            )
+            return _llm_instance
+        except Exception as e:
+            print(f"[Curriculum Agent] Google GenAI init warning: {e}")
 
     from langchain_openai import ChatOpenAI
     _llm_instance = ChatOpenAI(model="gpt-4o-mini", api_key=settings.OPENAI_API_KEY, temperature=0.3)
