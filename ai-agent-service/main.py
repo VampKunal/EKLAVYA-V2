@@ -194,23 +194,65 @@ async def run_curriculum_agent(req: CurriculumRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Curriculum error: {str(e)}")
 
-# Endpoint 4: Stateful Multi-turn Study Session Agent (MemorySaver Checkpointer)
+async def get_or_restore_session_state(thread_id: str) -> dict:
+    thread_config = {"configurable": {"thread_id": thread_id}}
+    state = study_session_app.get_state(thread_config)
+    if state and state.values:
+        return state.values
+    
+    # 1. Check Redis Cache
+    cached = await redis_cache.get(f"session:{thread_id}")
+    if cached and isinstance(cached, dict):
+        study_session_app.update_state(thread_config, {
+            "main_topic": cached.get("main_topic", "General"),
+            "chat_history": cached.get("chat_history", []),
+            "topics_covered": cached.get("topics_covered", []),
+            "comprehension_score": cached.get("comprehension_score", 70)
+        })
+        return cached
+
+    # 2. Check MongoDB Fallback
+    try:
+        from motor.motor_asyncio import AsyncIOMotorClient
+        mongo_client = AsyncIOMotorClient(settings.MONGODB_URI)
+        try:
+            db = mongo_client.get_default_database()
+        except Exception:
+            db = mongo_client.get_database("eklavya")
+            
+        session_doc = await db["studysessions"].find_one({"threadId": thread_id})
+        if session_doc:
+            session_doc.pop("_id", None)
+            study_session_app.update_state(thread_config, {
+                "main_topic": session_doc.get("main_topic", "General"),
+                "chat_history": session_doc.get("chat_history", []),
+                "topics_covered": session_doc.get("topics_covered", []),
+                "comprehension_score": session_doc.get("comprehension_score", 70)
+            })
+            await redis_cache.set(f"session:{thread_id}", session_doc, ttl=86400)
+            return session_doc
+    except Exception as e:
+        print(f"[FastAPI] MongoDB state restoration fallback skipped: {e}")
+
+    return {}
+
+# Endpoint 4: Stateful Multi-turn Study Session Agent (Redis + MongoDB via RabbitMQ Persistent Worker)
 @app.post("/api/v1/session/message")
 async def send_session_message(req: StudySessionMessageRequest):
     thread_config = {"configurable": {"thread_id": req.threadId}}
 
     try:
-        # Retrieve existing state or initialize
-        current_state = study_session_app.get_state(thread_config)
-        history = list(current_state.values.get("chat_history", [])) if current_state.values else []
+        # Retrieve existing state (from MemorySaver RAM -> Redis -> MongoDB)
+        session_values = await get_or_restore_session_state(req.threadId)
+        history = list(session_values.get("chat_history", []))
         history.append({"role": "user", "content": req.message})
 
         input_state = {
             "session_id": req.threadId,
-            "main_topic": req.topic,
+            "main_topic": req.topic or session_values.get("main_topic", "General Computer Science"),
             "chat_history": history,
-            "topics_covered": current_state.values.get("topics_covered", []) if current_state.values else [],
-            "comprehension_score": current_state.values.get("comprehension_score", 70) if current_state.values else 70,
+            "topics_covered": session_values.get("topics_covered", []),
+            "comprehension_score": session_values.get("comprehension_score", 70),
             "latest_answer": "",
             "followup_question": ""
         }
@@ -224,33 +266,61 @@ async def send_session_message(req: StudySessionMessageRequest):
         final_state = await asyncio.to_thread(study_session_app.invoke, input_state, config=exec_config)
         
         # Append assistant answer to stored history
-        updated_history = history + [{"role": "assistant", "content": final_state.get("latest_answer", "")}]
-        study_session_app.update_state(thread_config, {"chat_history": updated_history})
+        latest_ans = final_state.get("latest_answer", "")
+        followup_q = final_state.get("followup_question", "")
+        topics_cov = final_state.get("topics_covered", [])
+        score = final_state.get("comprehension_score", 70)
+
+        updated_history = history + [{"role": "assistant", "content": latest_ans}]
+        
+        # 1. Update in-memory state graph checkpointer
+        study_session_app.update_state(thread_config, {
+            "chat_history": updated_history,
+            "topics_covered": topics_cov,
+            "comprehension_score": score,
+            "main_topic": req.topic
+        })
+
+        session_payload = {
+            "threadId": req.threadId,
+            "userId": req.userId,
+            "main_topic": req.topic,
+            "chat_history": updated_history,
+            "topics_covered": topics_cov,
+            "comprehension_score": score,
+            "latest_answer": latest_ans,
+            "followup_question": followup_q
+        }
+
+        # 2. Persist state to Redis Cache (Fast read/write across services)
+        await redis_cache.set(f"session:{req.threadId}", session_payload, ttl=86400)
+
+        # 3. Publish state update to RabbitMQ (Async worker persists to MongoDB)
+        await rabbitmq_publisher.publish("study_sessions_queue", session_payload)
 
         return {
             "threadId": req.threadId,
-            "answer": final_state.get("latest_answer"),
-            "followupQuestion": final_state.get("followup_question"),
-            "comprehensionScore": final_state.get("comprehension_score"),
-            "topicsCovered": final_state.get("topics_covered")
+            "answer": latest_ans,
+            "followupQuestion": followup_q,
+            "comprehensionScore": score,
+            "topicsCovered": topics_cov
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Study Session error: {str(e)}")
 
 @app.get("/api/v1/session/{thread_id}/summary")
 async def get_session_summary(thread_id: str):
-    thread_config = {"configurable": {"thread_id": thread_id}}
     try:
-        state = study_session_app.get_state(thread_config)
-        if not state or not state.values:
+        session_values = await get_or_restore_session_state(thread_id)
+        if not session_values:
             return {"threadId": thread_id, "status": "not_found", "message": "No active session found for this thread ID."}
 
         return {
             "threadId": thread_id,
-            "topic": state.values.get("main_topic"),
-            "messagesCount": len(state.values.get("chat_history", [])),
-            "topicsCovered": state.values.get("topics_covered", []),
-            "comprehensionScore": state.values.get("comprehension_score", 70)
+            "topic": session_values.get("main_topic") or session_values.get("topic"),
+            "messagesCount": len(session_values.get("chat_history", [])),
+            "topicsCovered": session_values.get("topics_covered", []),
+            "comprehensionScore": session_values.get("comprehension_score", 70)
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error fetching session summary: {str(e)}")

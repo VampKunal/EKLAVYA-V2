@@ -14,6 +14,7 @@ class RabbitMQPublisher:
                 self.channel = await self.connection.channel()
                 await self.channel.declare_queue("quiz_attempts_queue", durable=True)
                 await self.channel.declare_queue("analytics_events_queue", durable=True)
+                await self.channel.declare_queue("study_sessions_queue", durable=True)
                 print("[RabbitMQ] Connected and queues declared successfully")
                 return
             except Exception as e:

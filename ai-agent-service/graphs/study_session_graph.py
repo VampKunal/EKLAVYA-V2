@@ -171,8 +171,19 @@ Short Follow-Up Question:"""
     return {"followup_question": followup}
 
 
-# Build Graph with Checkpointer
-memory_checkpointer = MemorySaver()
+# Build Graph with Persistent Checkpointer (RedisSaver with MemorySaver fallback)
+def get_checkpointer():
+    redis_url = getattr(settings, "REDIS_URL", "") or "redis://localhost:6379"
+    try:
+        from langgraph.checkpoint.redis import RedisSaver
+        saver = RedisSaver(redis_url=redis_url)
+        print(f"[Study Session Graph] Persistent RedisSaver checkpointer initialized with: {redis_url}")
+        return saver
+    except Exception as e:
+        print(f"[Study Session Graph] RedisSaver checkpointer initialization skipped ({e}). Falling back to MemorySaver.")
+        return MemorySaver()
+
+checkpointer_instance = get_checkpointer()
 
 def build_study_session_graph():
     workflow = StateGraph(StudySessionState)
@@ -186,6 +197,6 @@ def build_study_session_graph():
     workflow.add_edge("assess_comprehension", "generate_followup")
     workflow.add_edge("generate_followup", END)
 
-    return workflow.compile(checkpointer=memory_checkpointer)
+    return workflow.compile(checkpointer=checkpointer_instance)
 
 study_session_app = build_study_session_graph()

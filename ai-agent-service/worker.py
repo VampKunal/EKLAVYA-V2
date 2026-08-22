@@ -48,6 +48,25 @@ async def process_quiz_attempt(message: aio_pika.IncomingMessage, db):
         except Exception as e:
             print(f"[Worker] Error processing quiz attempt: {e}")
 
+async def process_study_session(message: aio_pika.IncomingMessage, db):
+    async with message.process():
+        try:
+            payload = json.loads(message.body.decode())
+            thread_id = payload.get("threadId") or payload.get("session_id")
+            print(f"[Worker] Processing study session state persistence for threadId: {thread_id}")
+
+            if thread_id:
+                sessions_col = db["studysessions"]
+                # Upsert session checkpoint state into MongoDB
+                await sessions_col.update_one(
+                    {"threadId": thread_id},
+                    {"$set": payload},
+                    upsert=True
+                )
+                print(f"[Worker] Study session checkpoint successfully saved to MongoDB for thread: {thread_id}")
+        except Exception as e:
+            print(f"[Worker] Error processing study session checkpoint: {e}")
+
 async def start_worker():
     print("[Worker] Connecting to MongoDB and RabbitMQ...")
     mongo_client = AsyncIOMotorClient(settings.MONGODB_URI)
@@ -71,9 +90,11 @@ async def start_worker():
     channel = await connection.channel()
     
     quiz_queue = await channel.declare_queue("quiz_attempts_queue", durable=True)
+    session_queue = await channel.declare_queue("study_sessions_queue", durable=True)
     
     print("[Worker] Ingestion worker is ready. Listening for RabbitMQ messages...")
     await quiz_queue.consume(lambda msg: process_quiz_attempt(msg, db))
+    await session_queue.consume(lambda msg: process_study_session(msg, db))
     
     try:
         await asyncio.Future()
