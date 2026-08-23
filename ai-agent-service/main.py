@@ -110,6 +110,9 @@ async def run_crag_agent(req: CRAGRequest):
         "course_id": req.courseId,
         "chat_history": req.chatHistory or [],
         "documents": [],
+        "raw_doc_scores": [],
+        "top_rerank_score": 0.0,
+        "eval_method": "",
         "is_relevant": False,
         "web_search_needed": False,
         "final_answer": "",
@@ -127,13 +130,18 @@ async def run_crag_agent(req: CRAGRequest):
         web_searched = final_state.get("web_search_needed", False)
         docs_used = len(final_state.get("documents", []))
         hallucination_score = final_state.get("hallucination_score", "PASSED")
+        eval_method = final_state.get("eval_method", "UNKNOWN")
+        top_score = round(final_state.get("top_rerank_score", 0.0), 4)
 
         response_payload = {
             "answer": answer,
             "webSearchUsed": web_searched,
             "documentsUsed": docs_used,
-            "hallucinationScore": hallucination_score
+            "hallucinationScore": hallucination_score,
+            "evalMethod": eval_method,
+            "topRerankScore": top_score
         }
+
         await redis_cache.set(cache_key, response_payload, ttl=1800)
 
         # Auto-populate LangSmith Dataset if high quality passed run
