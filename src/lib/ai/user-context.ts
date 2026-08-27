@@ -63,6 +63,11 @@ export function needsDashboardContext(intent: Intent, messageText: string): bool
   const lower = messageText.toLowerCase();
   return (
     lower.includes('my course') ||
+    lower.includes('available course') ||
+    lower.includes('what course') ||
+    lower.includes('which course') ||
+    lower.includes('course available') ||
+    lower.includes('courses available') ||
     lower.includes('my progress') ||
     lower.includes('my subject') ||
     lower.includes('weak topic') ||
@@ -219,7 +224,10 @@ export async function getUserDashboardContext(
       ? Math.round(courseContexts.reduce((sum, c) => sum + c.accuracy, 0) / courseContexts.length)
       : 0;
 
-  const data: UserDashboardContext = {
+  // Also fetch all available public/platform courses so the AI can list them when asked
+  const allPlatformCourses = await Course.find({ isPublic: true }).select('title description').lean();
+
+  const data: UserDashboardContext & { availablePlatformCourses?: { title: string; description?: string }[] } = {
     studentName,
     learningGoal,
     courses: courseContexts,
@@ -227,6 +235,7 @@ export async function getUserDashboardContext(
     weakTopicDetails: allWeakDetails,
     masteredTopics,
     overallAccuracy,
+    availablePlatformCourses: allPlatformCourses.map(c => ({ title: c.title, description: c.description })),
   };
 
   // 3. Store in cache
@@ -238,7 +247,7 @@ export async function getUserDashboardContext(
 // Prompt serialiser — compact to save tokens (~80-150 tokens)
 // ---------------------------------------------------------------------------
 
-export function formatUserContextForPrompt(ctx: UserDashboardContext): string {
+export function formatUserContextForPrompt(ctx: UserDashboardContext & { availablePlatformCourses?: { title: string; description?: string }[] }): string {
   const courseList =
     ctx.courses.length > 0
       ? ctx.courses
@@ -250,7 +259,12 @@ export function formatUserContextForPrompt(ctx: UserDashboardContext): string {
                 : ')'),
           )
           .join('\n')
-      : '  (none yet)';
+      : '  (none enrolled yet)';
+
+  const availableList =
+    ctx.availablePlatformCourses && ctx.availablePlatformCourses.length > 0
+      ? ctx.availablePlatformCourses.map((c, i) => `  - "${c.title}"${c.description ? `: ${c.description}` : ''}`).join('\n')
+      : '  (none listed)';
 
   const weakActionsList =
     ctx.weakTopicDetails && ctx.weakTopicDetails.length > 0
@@ -268,11 +282,13 @@ export function formatUserContextForPrompt(ctx: UserDashboardContext): string {
 
   return [
     `[Student: ${ctx.studentName} | Goal: ${ctx.learningGoal ?? 'not set'} | Overall accuracy: ${ctx.overallAccuracy}%]`,
-    `Enrolled courses (${ctx.courses.length}):`,
+    `Student's Enrolled courses (${ctx.courses.length}):`,
     courseList,
+    `All Available Platform Courses in Environment:`,
+    availableList,
     `Mastered Topics (DO NOT focus on these unless student requests): ${masteredList}`,
     `Weak Topics & Recommended Actions (PRIORITIZE THESE for guidance and practice):`,
     weakActionsList,
-    `Use this data to tailor study recommendations specifically to weak sub-topics. Do NOT repeat raw numbers unless asked.`,
+    `Use this data to answer questions about enrolled or available courses and tailor study recommendations. Do NOT repeat raw numbers unless asked.`,
   ].join('\n');
 }

@@ -1,4 +1,4 @@
-# 🎓 Eklavya AI — Intelligent Learning Platform with LangGraph & Microservices
++-# 🎓 Eklavya AI — Intelligent Learning Platform with LangGraph & Microservices
 
 [![Next.js](https://img.shields.io/badge/Next.js-14.2-black?style=flat-square&logo=next.js)](https://nextjs.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.110-009688?style=flat-square&logo=fastapi)](https://fastapi.tiangolo.com/)
