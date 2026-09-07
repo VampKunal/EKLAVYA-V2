@@ -15,6 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXTAUTH_URL || "https://eklavya.ai"),
   title: "Eklavya AI | Master Any Subject with Your Personal AI Tutor",
   description: "Eklavya analyzes your learning style, tracks your weak points, and delivers personalized quizzes, notes, and AI-driven insights to accelerate your mastery.",
   keywords: ["AI Tutor", "Learning Platform", "Personalized Learning", "Adaptive RAG Learning", "E-learning"],
