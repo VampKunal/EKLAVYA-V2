@@ -1,0 +1,39 @@
+name: Continuous LLM Evaluation CI
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'eklavya/ai-agent-service/**'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'eklavya/ai-agent-service/**'
+
+jobs:
+  ragas-evaluation:
+    name: Run RAGAS Quantitative Evaluation Suite
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install Python Dependencies
+        run: |
+          cd eklavya/ai-agent-service
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run RAGAS Benchmark Evaluation Suite
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          GOOGLE_GENERATIVE_AI_API_KEY: ${{ secrets.GOOGLE_GENERATIVE_AI_API_KEY }}
+        run: |
+          cd eklavya/ai-agent-service
+          python test_production_llmops_suite.py

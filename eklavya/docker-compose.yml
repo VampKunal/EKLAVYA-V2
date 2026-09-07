@@ -1,0 +1,88 @@
+services:
+  # Next.js Web Frontend & API Gateway
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.nextjs
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - FASTAPI_AGENT_URL=http://ai-agent:8000
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
+    env_file:
+      - .env.local
+    depends_on:
+      ai-agent:
+        condition: service_started
+      rabbitmq:
+        condition: service_healthy
+
+  # FastAPI LangGraph Microservice
+  ai-agent:
+    build:
+      context: ./ai-agent-service
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
+    env_file:
+      - ./ai-agent-service/.env
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
+  # RabbitMQ Ingestion Worker Process
+  worker:
+    build:
+      context: ./ai-agent-service
+      dockerfile: Dockerfile
+    command: python -u worker.py
+    environment:
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
+    env_file:
+      - ./ai-agent-service/.env
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
+  # RabbitMQ Message Broker Instance
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    ports:
+      - "5672:5672"
+      - "15672:15672" # Management Dashboard
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+
+  # Prometheus Metrics Scraper
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    depends_on:
+      - ai-agent
+
+  # Grafana Dashboard UI
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning
+      - ./grafana/dashboards:/var/lib/grafana/dashboards
+    depends_on:
+      - prometheus
+
+volumes:
+  rabbitmq_data:
