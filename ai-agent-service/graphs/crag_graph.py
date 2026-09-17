@@ -72,13 +72,24 @@ def get_embeddings():
     if settings.GOOGLE_AI_API_KEY:
         try:
             from langchain_google_genai import GoogleGenerativeAIEmbeddings
-            _embeddings_instance = GoogleGenerativeAIEmbeddings(
-                model="models/embedding-001",
+            emb = GoogleGenerativeAIEmbeddings(
+                model="models/text-embedding-004",
                 google_api_key=settings.GOOGLE_AI_API_KEY
             )
+            # Test invocation to verify key/model validity
+            emb.embed_query("test")
+            _embeddings_instance = emb
             return _embeddings_instance
         except Exception as e:
-            print(f"[CRAG Graph] Google Embeddings warning: {e}")
+            print(f"[CRAG Graph] Google Embeddings warning/fallback: {e}")
+
+    try:
+        from langchain_community.embeddings import HuggingFaceEmbeddings
+        _embeddings_instance = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
+        print("[CRAG Graph] Loaded local sentence-transformers HuggingFace embeddings: 'all-MiniLM-L6-v2'")
+        return _embeddings_instance
+    except Exception as hf_err:
+        print(f"[CRAG Graph] Local HuggingFace Embeddings fallback warning: {hf_err}")
 
     return None
 

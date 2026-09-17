@@ -26,52 +26,123 @@ This document is a comprehensive technical breakdown of **Eklavya AI**, covering
 
 ```mermaid
 flowchart TD
-    UserQuery[User Input / Voice STT / PDF Upload] --> Proxy[Next.js Proxy Middleware / Rate Limiter]
-    Proxy --> Frontend[Next.js App Gateway :3000]
+    UserQuery["User Input (Next.js Web / Voice STT / PDF Upload)"] --> Proxy["Next.js Route Handlers & Middleware / Upstash Rate Limiter"]
     
-    Frontend -->|Feedback 👍/👎| FeedbackRoute[API Route: /api/feedback]
-    FeedbackRoute --> FastAPI
-    
-    Frontend -->|PDF Document Upload| PDFIngestRoute[API Route: /api/ingest/pdf]
-    PDFIngestRoute --> PDFParser[PyMuPDF / pypdf Parser & Chunker]
-    PDFParser --> VectorEmbed[Embedding Generator]
-    VectorEmbed --> Qdrant[(Qdrant Vector DB)]
-    
-    Frontend -->|Agentic Workflows| AgentProxy[Next.js Agent Proxy /api/agents/*]
-    AgentProxy --> FastAPI[FastAPI LangGraph Service :8000]
-    
-    FastAPI --> PromMetrics[Prometheus FastAPI Instrumentator /metrics]
-    PromMetrics --> PromServer[Prometheus Scraper :9090]
-    PromServer --> Grafana[Grafana Operational Dashboard :3001]
-    
-    FastAPI --> GuardrailCheck{1. Security Guardrails Check}
-    GuardrailCheck -->|Injection / Harmful| GuardrailBlock[Block Request & Log Violation]
-    GuardrailCheck -->|Safe Query| SemCacheCheck{2. Semantic Similarity Cache}
-    
-    SemCacheCheck -->|Hit score >= 0.85| ReturnSemCache[Return Cached Response Instantly]
-    SemCacheCheck -->|Miss| CRAGNode[3. CRAG Graph Execution]
-    
-    CRAGNode --> ReRanker[Cross-Encoder Re-Ranker]
-    ReRanker --> SmartBypass{Score >= 0.70?}
-    SmartBypass -->|Yes| Synthesizer[Synthesize Response]
-    SmartBypass -->|No| Grader{Doc Grader: Relevant?}
-    Grader -->|No| Tavily[Tavily Web Search Tool Fallback]
-    Grader -->|Yes| Synthesizer
-    Tavily --> Synthesizer
-    
-    FastAPI --> RagasEvalEngine[RAGAS Quantitative Evaluation Engine]
-    RagasEvalEngine --> RagasMetrics[Faithfulness, Relevancy, Precision, Recall]
-    
-    FastAPI -->|Stream SSE Tokens| SSEStream[Server-Sent Events Stream /api/v1/crag/stream]
-    
-    FastAPI -->|Telemetry & Feedback| LangSmith[LangSmith Telemetry & Run Feedback]
-    
-    FastAPI -->|Publish Async Log| RabbitMQ[(RabbitMQ Message Broker :5672)]
-    RabbitMQ --> IngestionWorker[Python Worker worker.py]
-    IngestionWorker --> MongoDB[(MongoDB Atlas Persistent DB)]
+    subgraph FrontendGateway ["Frontend & API Gateway (Next.js 15 :3000)"]
+        Proxy --> NextRouter{"Request Router / Intent Classifier"}
+        NextRouter -->|General Chat / Quiz / Recs| NextVercelSDK["Vercel AI SDK Model Router (model-router.ts)"]
+        NextRouter -->|Agentic Tasks / Deep RAG / Ingestion| NextFastApiProxy["FastAPI Agent Proxy (/api/agents/*)"]
+        NextRouter -->|Feedback 👍/👎| FeedbackRoute["Feedback Proxy (/api/feedback)"]
+        NextRouter -->|PDF Notes Upload| PDFIngestRoute["PDF Ingestion Proxy (/api/ingest/pdf)"]
+    end
+
+    subgraph DirectAI ["Direct Edge Model Router (Proxy-Wrapped Fallback)"]
+        NextVercelSDK -->|Primary 200 OK| PrimaryGemini["Google Gemini 2.5 Flash / Pro (GOOGLE_AI_API_KEY)"]
+        NextVercelSDK -.->|429 RateLimit or 404 Deprecated| FallbackOpenRouter["OpenRouter Free Tier (DeepSeek-R1 / LLaMA-3.3-70B / Auto)"]
+    end
+
+    subgraph FastAPIService ["FastAPI LangGraph Microservice (:8000)"]
+        NextFastApiProxy --> PromMetrics["Prometheus FastAPI Instrumentator (:8000/metrics)"]
+        PDFIngestRoute --> PDFParser["PyMuPDF / pypdf Parser & Recursive Chunker"]
+        PDFParser --> EmbeddingNode["Dense Embedding Generator (Google text-embedding-004 / MiniLM)"]
+        EmbeddingNode --> QdrantDB[("Qdrant Vector DB (Collections: course_documents)")]
+
+        PromMetrics --> GuardrailCheck{"1. Security Guardrail Engine (services/guardrails.py)"}
+        GuardrailCheck -->|Prompt Injection / Toxic| GuardrailBlock["Reject Request (HTTP 400) + Incr crag_guardrail_blocked_total"]
+        GuardrailCheck -->|Sanitized Query| CacheCheck{"2. Two-Tier Caching Layer"}
+        
+        CacheCheck -->|Exact Match Hit| ExactCacheHit["Return Exact Redis Cached Payload (<10ms)"]
+        CacheCheck -->|Exact Miss| SemCacheCheck{"Semantic Cache: Cosine Sim >= 0.85?"}
+        SemCacheCheck -->|Hit| SemCacheHit["Return Semantic Vector Cached Payload (<35ms)"]
+        
+        SemCacheCheck -->|Miss| GraphRouter{"3. LangGraph Specialized Agent Orchestrator"}
+        
+        GraphRouter -->|RAG Question Answering| CRAG["CRAG Graph (crag_graph.py)"]
+        GraphRouter -->|Quiz Failure Remediation| RemediationGraph["Quiz Remediation Graph (quiz_remediation_graph.py)"]
+        GraphRouter -->|Syllabus Breakdown| CurriculumGraph["Curriculum Graph (curriculum_graph.py)"]
+        GraphRouter -->|Adaptive Practice| StudySessionGraph["Study Session Graph (study_session_graph.py)"]
+        GraphRouter -->|Descriptive Assessment| EssayGraderGraph["Essay Grader Graph (essay_grader_graph.py)"]
+    end
+
+    subgraph CRAGPipeline ["CRAG Deep Execution Engine"]
+        CRAG --> RetNode["retrieve_node: Top 10 Chunks from Qdrant"]
+        RetNode --> RerankNode["rerank_node: Cross-Encoder (ms-marco-MiniLM-L-6-v2) + Sigmoid"]
+        RerankNode --> Top4Docs["Top 4 Ranked Documents"]
+        
+        Top4Docs --> GraderCheck{"grade_documents_node (Hybrid Decision Boundary)"}
+        GraderCheck -->|Top Score >= 0.70| SmartBypass["High Confidence Bypass (Skip LLM Grader)"]
+        GraderCheck -->|Top Score < 0.30| LowMiss["Low Confidence Miss (Force Web Search)"]
+        GraderCheck -->|0.30 <= Score < 0.70| LLMGrader["LLM-in-the-Loop Grader (Structured Pydantic)"]
+        
+        LowMiss --> TavilyWebSearch["web_search_node (Tavily Search API Fallback)"]
+        LLMGrader -->|is_relevant = False| TavilyWebSearch
+        LLMGrader -->|is_relevant = True| SmartBypass
+        
+        SmartBypass --> GenNode["generate_node: Context-Grounded Answer Synthesis"]
+        TavilyWebSearch --> GenNode
+        
+        GenNode --> GuardrailEval["hallucination_check_node: Groundedness Guardrail"]
+        GuardrailEval -->|Entailed| ReturnAnswer["Final Verified Answer + Latency Telemetry"]
+        GuardrailEval -->|Unsubstantiated| FlagHallucination["Flag 'WARNING_HALLUCINATION_SUSPECTED' + Return"]
+    end
+
+    subgraph ObservabilityAndAsync ["Production LLMOps, Telemetry & Message Broker"]
+        ReturnAnswer --> SSEStream["SSE Token Streaming (/api/v1/crag/stream)"]
+        ReturnAnswer --> RabbitMQ[("RabbitMQ Broker (:5672) / Async Ingestion Worker")]
+        RabbitMQ --> MongoDB[("MongoDB Atlas (chat_history, user_progress, analytics)")]
+        
+        ReturnAnswer --> LangSmithTelemetry["LangSmith Traces & Run Monitoring"]
+        FeedbackRoute --> LangSmithFeedback["LangSmith Run Feedback + MongoDB agent_feedback"]
+        
+        PromMetrics --> PrometheusServer["Prometheus Scraper (:9090)"]
+        PrometheusServer --> GrafanaDashboard["Grafana Visual Metrics Dashboard (:3001)"]
+        
+        FastAPIService --> RagasEngine["Offline RAGAS Evaluation Engine (/api/v1/eval/ragas)"]
+    end
 ```
 
-### 1. LLM Security Guardrails Layer (Tier 2 Feature)
+### 1. Model Matrix & Mathematical Formulations
+
+#### A. Active Model Deployments
+| Component / Workflow | Primary Model | Fallback Model | Role & Temperature |
+|---|---|---|---|
+| **Next.js Model Router (Chat/Quiz/Recs)** | `gemini-2.5-flash` / `gemini-2.5-pro` (Google AI) | `deepseek/deepseek-r1:free` / `llama-3.3-70b-instruct:free` (OpenRouter) | Conversational generation, quiz item generation, dynamic study recommendations. |
+| **FastAPI Agent Synthesizer** | `google/gemini-2.5-flash` / `gemini-3.6-flash` | `gpt-4o-mini` (OpenAI) | Stateful agent synthesis with `temperature=0.1`. |
+| **Document Relevance Grader** | `gemini-2.5-flash` (Pydantic `DocumentRelevanceSchema`) | `gpt-4o-mini` | Ambiguous zone classification (`is_relevant: bool`). |
+| **Hallucination Guardrail** | `gemini-2.5-flash` (Pydantic `HallucinationEvaluationSchema`) | `gpt-4o-mini` | Fact check verification (`score: PASSED \| FAILED`). |
+| **Cross-Encoder Reranker** | `cross-encoder/ms-marco-MiniLM-L-6-v2` | Dense vector similarity fallback | Zero-shot query-document cross-attention scoring. |
+| **Dense Vector Embeddings** | `models/text-embedding-004` (Google 768-d) / `text-embedding-3-small` (OpenAI 1536-d) | `sentence-transformers/all-MiniLM-L6-v2` (Local 384-d) | Document chunk & query vector embedding in Qdrant. |
+
+#### B. Mathematical Formulations
+1. **Cross-Encoder Logit Normalization (Sigmoid)**:
+   Maps unbounded output logits $x \in (-\infty, +\infty)$ from `ms-marco-MiniLM-L-6-v2` into calibrated probabilities $S \in [0.0, 1.0]$:
+   $$\sigma(x) = \frac{1}{1 + e^{-x}}$$
+
+2. **Semantic Cache Cosine Similarity**:
+   For incoming query vector $\vec{q}$ and cached query vector $\vec{c}_i$:
+   $$\text{Sim}(\vec{q}, \vec{c}_i) = \frac{\vec{q} \cdot \vec{c}_i}{\|\vec{q}\|_2 \|\vec{c}_i\|_2} \ge 0.85 \implies \text{Cache Hit}$$
+
+3. **Hybrid Relevance 3-Zone Decision Function**:
+   $$D(S_{\text{top}}) = \begin{cases} \text{Relevant (Bypass LLM)}, & S_{\text{top}} \ge 0.70 \\ \text{LLM Evaluator Invocation}, & 0.30 \le S_{\text{top}} < 0.70 \\ \text{Irrelevant (Force Web Search)}, & S_{\text{top}} < 0.30 \end{cases}$$
+
+4. **Groundedness / Faithfulness Metric Formulation**:
+   $$\text{Faithfulness} = \frac{|\text{Factual claims in answer entailed by retrieved context chunks}|}{|\text{Total factual claims in generated answer}|}$$
+
+---
+
+### 2. Deep Breakdown of the 5 LangGraph Agent Workflows
+
+1. **CRAG Agent (`crag_app`)**: Corrective RAG pipeline utilizing Qdrant vector retrieval, cross-encoder reranking, 3-zone relevance evaluation, Tavily web search fallback, structured generation, and groundedness guardrails.
+2. **Quiz Remediation Agent (`quiz_remediation_app`)**: Ingests incorrect quiz choices, pinpoints core conceptual misconceptions, and generates adaptive micro-lessons with targeted follow-up test questions.
+3. **Curriculum Agent (`curriculum_app`)**: Takes high-level course subjects, breaks them into prerequisite-ordered learning modules, estimated completion times, and learning objectives.
+4. **Study Session Agent (`study_session_app`)**: Synthesizes student retention history and mastery deficits into an active recall study schedule.
+5. **Essay Grader Agent (`essay_grader_app`)**: Performs multi-criteria evaluation of open-ended student answers across clarity, factual accuracy, completeness, and reasoning depth.
+
+---
+
+### 3. Production LLMOps Engineering Capabilities
+
+#### 1. LLM Security Guardrails Layer
 - **File**: [`ai-agent-service/services/guardrails.py`](file:///d:/EKLAVYA-MAIN/eklavya/ai-agent-service/services/guardrails.py)
 - **Function**: `check_input_guardrails(input_text)`
 - **Capabilities**:
@@ -79,7 +150,7 @@ flowchart TD
   - **Harmful Content Defense**: Filters out illegal or dangerous intent queries.
   - **Prometheus Metric**: Increments `crag_guardrail_blocked_total` on every blocked attack attempt.
 
-### 2. Semantic Similarity Caching Layer (Tier 2 Feature)
+#### 2. Semantic Similarity Caching Layer
 - **File**: [`ai-agent-service/services/semantic_cache.py`](file:///d:/EKLAVYA-MAIN/eklavya/ai-agent-service/services/semantic_cache.py)
 - **Manager**: `semantic_cache_manager` (Threshold: `0.85` cosine similarity)
 - **Capabilities**:
@@ -87,50 +158,47 @@ flowchart TD
   - If a user asks *"What is binary search algorithm?"* and another user asks *"Can you explain how binary search works in arrays?"*, the system detects semantic equivalence (**score >= 0.85**) and returns the cached answer instantly!
   - **Prometheus Metric**: Increments `crag_semantic_cache_hits_total`.
 
-### 3. RAGAS Quantitative Evaluation Engine (Tier 1 Feature)
+#### 3. RAGAS Quantitative Evaluation Engine
 - **File**: [`ai-agent-service/evaluation/ragas_eval.py`](file:///d:/EKLAVYA-MAIN/eklavya/ai-agent-service/evaluation/ragas_eval.py)
 - **Function**: `run_ragas_evaluation(test_cases)`
 - **Endpoint**: `POST /api/v1/eval/ragas`
 - **Capabilities**:
-  - Performs offline quantitative RAG benchmark evaluation across 4 industry-standard RAGAS metrics:
-    1. **Faithfulness**: Measures factual grounding of generated answer against retrieved context chunks.
-    2. **Answer Relevancy**: Evaluates how directly the answer addresses the user's question.
-    3. **Context Precision**: Signal-to-noise ratio of context chunks retrieved from vector DB.
-    4. **Context Recall**: Coverage of ground truth reference facts in retrieved context.
+  - Performs offline quantitative RAG benchmark evaluation across 4 industry-standard RAGAS metrics (Faithfulness, Answer Relevancy, Context Precision, Context Recall).
 
-### 4. Prometheus & Grafana Operational Dashboard (Tier 1 Feature)
+#### 4. Prometheus & Grafana Operational Dashboard
 - **Files**: `ai-agent-service/main.py`, `prometheus.yml`, `docker-compose.yml`
-- **Metrics Endpoint**: `/metrics`
-- **Dashboards**:
-  - `crag_hallucinations_total`: Counter for hallucination flags.
-  - `crag_web_searches_total`: Counter for Tavily web search fallback triggers.
-  - `crag_exact_cache_hits_total`: Counter for exact key Redis cache hits.
-  - `crag_semantic_cache_hits_total`: Counter for semantic vector cache hits.
-  - `crag_guardrail_blocked_total`: Counter for security guardrail blocks.
-  - `agent_execution_latency_seconds`: Histogram measuring execution latency across all 5 agent graphs.
+- **Metrics**: `crag_hallucinations_total`, `crag_web_searches_total`, `crag_exact_cache_hits_total`, `crag_semantic_cache_hits_total`, `crag_guardrail_blocked_total`, `agent_execution_latency_seconds`.
 
-### 5. LangSmith Human Feedback Loop (Tier 1 Feature)
+#### 5. LangSmith Human Feedback Loop
 - **Files**: `src/components/ChatUI.tsx`, `src/app/api/feedback/route.ts`, `ai-agent-service/main.py`
 - **Endpoint**: `POST /api/v1/feedback`
-- **Capabilities**:
-  - Renders 👍 / 👎 rating buttons under AI tutor assistant messages.
-  - Logs user ratings (`score = 1.0` or `0.0`) and optional comments directly to **LangSmith run telemetry** and **MongoDB `agent_feedback` collection**.
+- **Capabilities**: Logs user ratings (`score = 1.0` or `0.0`) and comments directly to **LangSmith run telemetry** and **MongoDB `agent_feedback` collection**.
 
-### 6. Server-Sent Events (SSE) Token Streaming (Tier 1 Feature)
+#### 6. Server-Sent Events (SSE) Token Streaming
 - **File**: `ai-agent-service/main.py`
 - **Endpoint**: `POST /api/v1/crag/stream`
-- **Capabilities**:
-  - Uses `StreamingResponse` with `text/event-stream` media type.
-  - Streams real-time graph node state updates and generated token chunks to the client frontend as nodes execute in LangGraph.
+- **Capabilities**: Streams real-time graph node state updates and generated token chunks to the client frontend as nodes execute in LangGraph.
 
-### 7. PDF Document Ingestion Pipeline (Tier 2 Feature)
+#### 7. PDF Document Ingestion Pipeline
 - **File**: [`ai-agent-service/services/ingestion.py`](file:///d:/EKLAVYA-MAIN/eklavya/ai-agent-service/services/ingestion.py)
 - **Endpoint**: `POST /api/v1/ingest/pdf`
-- **Capabilities**:
-  - Accepts PDF file uploads via multipart form-data.
-  - Parses PDF streams using PyMuPDF (`fitz`), `pypdf`, or string fallback.
-  - Recursively splits document text into overlapping chunks (`chunk_size=500, overlap=50`).
-  - Generates embeddings and upserts payload vectors to Qdrant collection filtered by `courseId`.
+- **Capabilities**: Accepts PDF file uploads, parses PDF streams using PyMuPDF (`fitz`) / `pypdf`, recursively splits text into overlapping chunks, generates embeddings, and upserts vectors into Qdrant.
+
+---
+
+## 3. Architecture Improvement & Optimization Roadmap
+
+To elevate Eklavya to an enterprise-grade, ultra-low latency, multi-modal educational platform, the following strategic improvements are planned:
+
+| Area | Current Implementation | Planned Improvement | Impact / Advantage |
+|---|---|---|---|
+| **1. Hybrid Search (BM25 + Dense)** | Dense vector search only in Qdrant | Implement **Reciprocal Rank Fusion (RRF)** combining Sparse BM25 + Dense Vectors | Eliminates blind spots on exact keyword, acronym, or code symbol searches. |
+| **2. Agent Memory & Stateful Checkpoints** | Ephemeral per-request history with basic MongoDB storage | LangGraph **Persistent Checkpointers (`AsyncMongoDBSaver` / `PostgresSaver`)** | Enables long-running conversational memory across sessions with time-travel / rollback capability. |
+| **3. Multi-Modal Vision Ingestion** | Text-only PDF extraction via PyMuPDF | **Vision-Language Parsing (ColPali / Gemini 2.5 Flash Vision)** for diagrams & formulas | Enables students to upload handwritten notes, textbook diagrams, and math formulas with full visual reasoning. |
+| **4. Sub-15ms Local Guardrails** | Regex + in-line LLM checks | **NeMo Guardrails / Llama-Guard-3-1B local ONNX engine** | Sub-15ms defense against adversarial jailbreaks without burning cloud LLM tokens. |
+| **5. Adaptive Speculative Streaming** | Standard token-by-token SSE streaming | **Speculative Decoding & Pre-Warmed KV Cache** | Up to 2.5x faster Time-To-First-Token (TTFT) for complex multi-step reasoning. |
+| **6. Real-Time WebRTC Voice Tutor** | Browser SpeechRecognition / SpeechSynthesis | **Bidirectional WebRTC Voice Pipeline (Gemini Live Audio)** | Low-latency (<400ms) voice tutoring with natural interruptions and expressive prosody. |
+| **7. Automated Continuous Fine-Tuning** | Static Prompt Engineering + Ragas Offline Evals | **Automated DPO (Direct Preference Optimization) Pipeline** from LangSmith 👍/👎 ratings | Model continuously adapts explanation style and pedagogical tone based on real student feedback. |
 
 ---
 

@@ -189,11 +189,6 @@ export default function ChatUI({ courseId, courseName }: { courseId?: string, co
     }
   };
 
-  useEffect(() => {
-    const cid = courseId || 'global';
-    loadHistory(cid);
-  }, [courseId]);
-
   const loadHistory = async (cid: string) => {
     try {
       const res = await fetch(`/api/chat/history?courseId=${cid}`);
@@ -217,6 +212,11 @@ export default function ChatUI({ courseId, courseName }: { courseId?: string, co
       console.error('Failed to load history', e);
     }
   };
+
+  useEffect(() => {
+    const cid = courseId || 'global';
+    loadHistory(cid);
+  }, [courseId]);
 
   const saveHistory = async (cid: string, updatedMessages: any[]) => {
     try {

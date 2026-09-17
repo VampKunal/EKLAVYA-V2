@@ -228,7 +228,7 @@ export function ResultView({ score, timeTaken, questions, topic = 'General Quiz'
                 LANGGRAPH AI MISCONCEPTION DIAGNOSIS ACTIVE
               </h4>
               <p className="text-sm font-sans text-stone-600 mt-1 leading-relaxed">
-                You missed {wrongCount} question{wrongCount > 1 ? 's' : ''}. Click the <strong className="font-mono font-bold text-orange-600">"AI Misconception Remediation"</strong> button on any incorrect question below for custom diagnostic analysis, a 3-bullet micro-lesson, and an adaptive retry problem!
+                You missed {wrongCount} question{wrongCount > 1 ? 's' : ''}. Click the <strong className="font-mono font-bold text-orange-600">&quot;AI Misconception Remediation&quot;</strong> button on any incorrect question below for custom diagnostic analysis, a 3-bullet micro-lesson, and an adaptive retry problem!
               </p>
             </div>
           </div>

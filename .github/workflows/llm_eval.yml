@@ -4,10 +4,12 @@ on:
   push:
     branches: [ main ]
     paths:
+      - 'ai-agent-service/**'
       - 'eklavya/ai-agent-service/**'
   pull_request:
     branches: [ main ]
     paths:
+      - 'ai-agent-service/**'
       - 'eklavya/ai-agent-service/**'
 
 jobs:
@@ -26,7 +28,11 @@ jobs:
 
       - name: Install Python Dependencies
         run: |
-          cd eklavya/ai-agent-service
+          if [ -d "eklavya/ai-agent-service" ]; then
+            cd eklavya/ai-agent-service
+          else
+            cd ai-agent-service
+          fi
           pip install --upgrade pip
           pip install -r requirements.txt
 
@@ -35,5 +41,9 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           GOOGLE_GENERATIVE_AI_API_KEY: ${{ secrets.GOOGLE_GENERATIVE_AI_API_KEY }}
         run: |
-          cd eklavya/ai-agent-service
+          if [ -d "eklavya/ai-agent-service" ]; then
+            cd eklavya/ai-agent-service
+          else
+            cd ai-agent-service
+          fi
           python test_production_llmops_suite.py

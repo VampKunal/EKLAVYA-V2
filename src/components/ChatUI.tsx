@@ -5,7 +5,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
-import { Copy, Check, Send, User, Bot, MoreHorizontal, Save, Mic, MicOff, Volume2, Square, Sparkles } from "lucide-react";
+import { Copy, Check, Send, User, Bot, MoreHorizontal, Save, Mic, MicOff, Volume2, Square, Sparkles, ThumbsUp, ThumbsDown } from "lucide-react";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 
@@ -77,6 +77,52 @@ const ReadAloudButton = ({ text }: { text: string }) => {
   );
 };
 
+// LangSmith Feedback Component
+const FeedbackButtons = ({ msgId }: { msgId: string }) => {
+  const [feedbackSent, setFeedbackSent] = useState<'up' | 'down' | null>(null);
+
+  const handleFeedback = async (score: number, type: 'up' | 'down') => {
+    setFeedbackSent(type);
+    try {
+      await fetch('/api/feedback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          runId: msgId,
+          score,
+          comment: type === 'up' ? 'Thumbs Up' : 'Thumbs Down',
+          userId: 'student'
+        })
+      });
+    } catch (e) {
+      console.error('Feedback submission failed', e);
+    }
+  };
+
+  return (
+    <div className="flex items-center gap-1">
+      <button
+        onClick={() => handleFeedback(1.0, 'up')}
+        className={`p-1.5 rounded-lg transition-colors text-xs flex items-center gap-1 font-mono ${
+          feedbackSent === 'up' ? 'text-green-600 bg-green-50 font-bold' : 'text-stone-400 hover:text-green-600 hover:bg-stone-100'
+        }`}
+        title="Helpful response"
+      >
+        <ThumbsUp className="w-3.5 h-3.5" />
+      </button>
+      <button
+        onClick={() => handleFeedback(0.0, 'down')}
+        className={`p-1.5 rounded-lg transition-colors text-xs flex items-center gap-1 font-mono ${
+          feedbackSent === 'down' ? 'text-red-600 bg-red-50 font-bold' : 'text-stone-400 hover:text-red-600 hover:bg-stone-100'
+        }`}
+        title="Needs improvement"
+      >
+        <ThumbsDown className="w-3.5 h-3.5" />
+      </button>
+    </div>
+  );
+};
+
 export default function ChatUI({ courseId, courseName }: { courseId?: string, courseName?: string }) {
   const [input, setInput] = useState("");
   const [isListening, setIsListening] = useState(false);
@@ -143,11 +189,6 @@ export default function ChatUI({ courseId, courseName }: { courseId?: string, co
     }
   };
 
-  useEffect(() => {
-    const cid = courseId || 'global';
-    loadHistory(cid);
-  }, [courseId]);
-
   const loadHistory = async (cid: string) => {
     try {
       const res = await fetch(`/api/chat/history?courseId=${cid}`);
@@ -171,6 +212,11 @@ export default function ChatUI({ courseId, courseName }: { courseId?: string, co
       console.error('Failed to load history', e);
     }
   };
+
+  useEffect(() => {
+    const cid = courseId || 'global';
+    loadHistory(cid);
+  }, [courseId]);
 
   const saveHistory = async (cid: string, updatedMessages: any[]) => {
     try {
@@ -321,7 +367,12 @@ export default function ChatUI({ courseId, courseName }: { courseId?: string, co
                     </div>
                   )}
                 </div>
-                {msg.role !== "user" && <ReadAloudButton text={textContent} />}
+                {msg.role !== "user" && (
+                  <div className="flex items-center gap-2 mt-1">
+                    <ReadAloudButton text={textContent} />
+                    <FeedbackButtons msgId={msg.id} />
+                  </div>
+                )}
                 <span className="text-[11px] font-mono text-stone-400 mt-1 mx-1">
                   {msg.role === "user" ? "You" : "Eklavya AI"}
                 </span>
